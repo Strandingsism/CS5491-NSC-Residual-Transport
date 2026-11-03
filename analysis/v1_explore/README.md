@@ -241,3 +241,37 @@ forking-path 记录：本节又在开发集标签上看了 3 个变体（不放�
 4. 因此**停止聚合形式这条线**。v3 加法（路径）仍然是最好的规格打分。加法与串联之间的张力写入报告的讨论部分，作为对 NSC 论文"求和还是乘积"问题的一个具体回答：在这个面板上，残差层内求和是对的；跨越串联阶段时，ψ 的尺度不能直接组合。
 
 forking-path 记录：本节在开发集标签上看了 2 个预注册的变体（主公式 + 敏感性分析），只评估了一次。
+
+## 10. 冻结 v3（tag `v3-frozen`，2026-11-03）
+
+### 10.1 冻结的方法
+
+- `nsc-starter/v3_score.py`：`score` = NSC + 嵌入路径容量；`ablation` = 原始 NSC（去掉嵌入路径）。
+- `nsc-starter/embedding_path.py`：只用标准库，实现第 7.1 节的路径容量公式。
+- 与开发集上评估的版本（`embedding_capacity.nsc_path`）逐配置比较，200 个配置的最大差为 **0.0**。
+- 用 starter 的评估器复现：`python nsc-starter/evaluate.py --split development --student nsc-starter/v3_score.py`，得到 student ρ = 0.983174、τ = 0.896162、匹配 τ = 0.655556（`v3_development_results.json`）。
+
+### 10.2 final 的预注册分析计划（写于运行 final 之前）
+
+**命令**（各运行一次）：
+
+```powershell
+.\.venv\Scripts\python.exe nsc-starter\evaluate.py --split final --student nsc-starter\v3_score.py --output analysis\v1_explore\v3_final_results.json
+.\.venv\Scripts\python.exe analysis\v1_explore\v3_final_eval.py --split final
+```
+
+**主要假设 H1**：在 final 上，ρ(v3) > ρ(NSC)，且 bootstrap 中 Δρ 的 95% CI 下界 > 0（重采样架构 5000 次，种子 5491）。
+
+**次要指标**：τ_b、匹配 τ、宽度内 ρ、starter 的选择 regret（4 个预算 × k=1,3）。
+
+**事先写下的预测**：
+1. 宽度内：v3 在 d=128/256/512 上不低于 NSC；在 **d=64 上低于 NSC**（开发集上已知的失败，第 8 节）。
+2. 选择 regret 与 NSC 基本相同，因为选择主要由规模决定。
+3. 如果 H1 不成立，就如实报告为负结果，**不再修改 v3**。
+
+**必须在报告中披露的事项**：
+- final split 已在 v2 中使用过一次（2026-11-03，tag `v2-frozen`）。当时看过 NSC、v2 和各基线在 final 上的汇总指标，但**从未在 final 上查看嵌入相关的任何量**，v3 的设计没有使用 final 的任何信息。
+- 开发集上看过的全部嵌入变体与聚合变体见第 4、7.3、8.3、9 节。
+- v3 是在 v2 之后提出的第二个假设，不是课程最初冻结的方法。
+
+开发集基准（`v3_development_eval.json`）：ρ 0.9832 vs NSC 0.9697，Δρ = +0.014，95% CI [+0.006, +0.026]。
