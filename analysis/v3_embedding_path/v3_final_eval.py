@@ -6,8 +6,8 @@ size-controlled tau-b, within-width rho, and the starter's selection regret. Wri
 before the final split is evaluated for v3; run on --split final exactly once.
 
 Run from project root:
-  .venv/Scripts/python.exe analysis/v1_explore/v3_final_eval.py --split development
-  .venv/Scripts/python.exe analysis/v1_explore/v3_final_eval.py --split final
+  .venv/Scripts/python.exe analysis/v3_embedding_path/v3_final_eval.py --split development
+  .venv/Scripts/python.exe analysis/v3_embedding_path/v3_final_eval.py --split final
 """
 from pathlib import Path
 import argparse

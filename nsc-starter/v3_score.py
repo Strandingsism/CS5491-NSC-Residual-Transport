@@ -7,7 +7,7 @@ embedding table seen through its rank-limited projection into the residual strea
 
 Ablation: remove the embedding path, which is exactly original NSC.
 
-Frozen development choices (analysis/v1_explore/README.md, sections 1-7):
+Frozen development choices (analysis/v3_embedding_path/README.md, sections 1-7):
 - additive aggregation (the series alternative failed as pre-registered, section 9);
 - path capacity with a variance-preserving projection (option B), chosen from label-free
   Monte Carlo checks before its development evaluation;

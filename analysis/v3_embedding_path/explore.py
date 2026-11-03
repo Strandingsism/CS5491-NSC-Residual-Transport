@@ -2,7 +2,7 @@
 
 Fits log(PPL) on log(size) and correlates the residual with architectural features that NSC ignores
 or treats additively. Reads development labels only; the final split is not touched.
-Run from project root: .venv/Scripts/python.exe analysis/v1_explore/explore.py
+Run from project root: .venv/Scripts/python.exe analysis/v3_embedding_path/explore.py
 """
 from pathlib import Path
 import json

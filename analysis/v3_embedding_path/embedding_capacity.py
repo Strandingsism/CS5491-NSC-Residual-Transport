@@ -7,7 +7,7 @@ Shape model (validated: AdaEmb = sum of these matrices + 192*d_model for every c
   d_embed / div_val^i (all d_embed when div_val=1); projection d_i x d_model unless d_i == d_model
   (div_val=1 uses a single table). tie_weight: output softmax reuses the tables; tie_projs[0]=False:
   the head cluster's output projection is a separate matrix.
-Run from project root: .venv/Scripts/python.exe analysis/v1_explore/embedding_capacity.py
+Run from project root: .venv/Scripts/python.exe analysis/v3_embedding_path/embedding_capacity.py
 """
 from pathlib import Path
 import json

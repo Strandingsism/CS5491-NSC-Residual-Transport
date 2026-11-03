@@ -11,7 +11,7 @@
 2. Saturation pattern per width and d_embed from the capacities alone (no labels).
 3. Controlled pair: identical layers, different d_embed.
 
-Run from project root: .venv/Scripts/python.exe analysis/v1_explore/mechanism_check.py
+Run from project root: .venv/Scripts/python.exe analysis/v3_embedding_path/mechanism_check.py
 """
 from pathlib import Path
 import json

@@ -4,7 +4,7 @@ Residual of log PPL after a common-slope fit on log score with width intercepts,
 (NSC + embedding path capacity). Correlates residuals with structural features within each width
 (stratified Spearman), lists worst outliers, and inspects discordant size-controlled pairs.
 Positive residual = model is worse than its score predicts (score over-rates it).
-Run from project root: .venv/Scripts/python.exe analysis/v1_explore/failures.py
+Run from project root: .venv/Scripts/python.exe analysis/v3_embedding_path/failures.py
 """
 from pathlib import Path
 import json

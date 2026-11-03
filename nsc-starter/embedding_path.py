@@ -7,7 +7,7 @@ residual_transport.py), so P is taken variance-preserving, N(0, 1/w). Because v 
 (w/v <= 0.05), E^T E ~= sigma^2 v I_w and the nonzero spectrum of E P is that of a w x d matrix with
 entries N(0, sigma^2 v / w). Its capacity is therefore psi_MP(w, d, sigma * sqrt(v / w)), which
 matches Monte Carlo within 0.4% RMS over all 60 table shapes in the panel
-(analysis/v1_explore/mechanism_check.py). A div_val=1 table with d_embed == d_model has no
+(analysis/v3_embedding_path/mechanism_check.py). A div_val=1 table with d_embed == d_model has no
 projection and is scored as psi_MP(v, d, sigma). Each tied table is counted once.
 
 Table shapes follow the archive's Transformer-XL adaptive embedding: cutoffs truncated at n_token,

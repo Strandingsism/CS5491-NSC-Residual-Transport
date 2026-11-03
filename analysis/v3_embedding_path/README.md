@@ -1,12 +1,12 @@
-# V1 探索：NSC 漏掉了什么？（只用开发集）
+# v3：嵌入路径容量（探索阶段曾称 V1；文件夹原名 `v1_explore`）
 
-日期：2026-11-03，分支 `V1`。所有分析只读开发集标签。**final 已在 v2 中用过一次**，所以 V1 的任何 final 评估都只能作为"开发集上冻结、final 上只检验一次"的第二假设，并在报告中如实披露。
+日期：2026-11-03，分支 `v3`（原名 `V1`）。第 1–10 节只用开发集；第 11 节为冻结后的 final 结果。所有分析只读开发集标签。**final 已在 v2 中用过一次**，所以 V1 的任何 final 评估都只能作为"开发集上冻结、final 上只检验一次"的第二假设，并在报告中如实披露。
 
 ## 运行
 
 ```powershell
-.\.venv\Scripts\python.exe analysis\v1_explore\explore.py               # 残差分析
-.\.venv\Scripts\python.exe analysis\v1_explore\embedding_capacity.py    # 候选打分（含未截断版本）
+.\.venv\Scripts\python.exe analysis\v3_embedding_path\explore.py               # 残差分析
+.\.venv\Scripts\python.exe analysis\v3_embedding_path\embedding_capacity.py    # 候选打分（含未截断版本）
 ```
 
 ## 1. 数据里 NSC 没用到的结构
@@ -256,8 +256,8 @@ forking-path 记录：本节在开发集标签上看了 2 个预注册的变体�
 **命令**（各运行一次）：
 
 ```powershell
-.\.venv\Scripts\python.exe nsc-starter\evaluate.py --split final --student nsc-starter\v3_score.py --output analysis\v1_explore\v3_final_results.json
-.\.venv\Scripts\python.exe analysis\v1_explore\v3_final_eval.py --split final
+.\.venv\Scripts\python.exe nsc-starter\evaluate.py --split final --student nsc-starter\v3_score.py --output analysis\v3_embedding_path\v3_final_results.json
+.\.venv\Scripts\python.exe analysis\v3_embedding_path\v3_final_eval.py --split final
 ```
 
 **主要假设 H1**：在 final 上，ρ(v3) > ρ(NSC)，且 bootstrap 中 Δρ 的 95% CI 下界 > 0（重采样架构 5000 次，种子 5491）。
@@ -275,3 +275,44 @@ forking-path 记录：本节在开发集标签上看了 2 个预注册的变体�
 - v3 是在 v2 之后提出的第二个假设，不是课程最初冻结的方法。
 
 开发集基准（`v3_development_eval.json`）：ρ 0.9832 vs NSC 0.9697，Δρ = +0.014，95% CI [+0.006, +0.026]。
+
+## 11. final 结果（在 `v3-frozen` 上运行一次，2026-11-03）
+
+运行时 HEAD 就是 `v3-frozen`，工作区干净；两条预注册命令各运行一次，输出为 `v3_final_results.json` 和 `v3_final_eval.json`。此后 v3 不再修改。
+
+### 11.1 排序
+
+| 打分 | ρ | τ_b | 匹配 τ（185 对） | 宽度内 ρ d64/128/256/512 |
+|---|---:|---:|---:|---|
+| **v3** | **0.9802** | **0.8861** | **0.373** | 0.940 / 0.947 / 0.950 / 0.749 |
+| NSC（消融） | 0.9659 | 0.8432 | 0.330 | 0.919 / 0.917 / 0.896 / 0.659 |
+| l/L 示例 | 0.9690 | 0.8533 | 0.319 | 0.896 / 0.895 / 0.908 / 0.659 |
+| 投影参数量 | 0.9643 | 0.8412 | 0.308 | 0.898 / 0.917 / 0.896 / 0.658 |
+| 参考 FLOPs | 0.9651 | 0.8424 | 0.330 | 0.924 / 0.921 / 0.900 / 0.658 |
+| 总参数量 | 0.7419 | 0.5895 | 0.276 | 0.177 / 0.387 / 0.889 / 0.834 |
+
+Bootstrap：**ρ(v3) − ρ(NSC) = +0.015，95% CI [+0.006, +0.028]，P(≤0) = 0.0008**。
+
+### 11.2 选择 regret
+
+v3 与 NSC 在 8 个预算/k 组合上完全相同：0 / 0 / 1.14 / 0.85 / 1.62 / 0.77 / 1.37 / 1.33。
+
+### 11.3 对照预注册
+
+| 预注册项 | 结果 | 判定 |
+|---|---|---|
+| H1：ρ(v3) > ρ(NSC)，CI 下界 > 0 | +0.015 [+0.006, +0.028] | ✔ 成立 |
+| 预测 1a：d=128/256/512 上不低于 NSC | +0.030 / +0.054 / +0.090 | ✔ |
+| 预测 1b：d=64 上低于 NSC | 0.940 vs 0.919，**反而更高** | ✘ 预测失败（方向有利） |
+| 预测 2：选择与 NSC 基本相同 | 完全相同 | ✔ |
+
+### 11.4 结论
+
+- 开发集上的提升（Δρ +0.014）在 final 上复现（+0.015），置信区间都不含 0。
+- 提升最大的是 d=512 的宽度内排序（+0.090），NSC 在这里最弱（0.659）。这与机制一致：宽模型中嵌入是相对较小的一环，NSC 完全看不到它。
+- 选型没有改善：在参数预算下挑模型主要由规模决定，嵌入项改变的是同等规模模型之间的排序。
+- d=64 的预测失败说明，开发集上看到的"小模型中嵌入被高估"（第 8 节）可能是开发集特有的噪声。不能据此声称这个问题已经解决，只能如实报告。
+
+### 11.5 披露（报告中必须写明）
+
+final split 被使用了两次：第一次用于 v2（tag `v2-frozen`），第二次用于 v3（tag `v3-frozen`）。v3 的设计没有使用 final 的任何信息，冻结、分析计划和预测都在运行之前提交。文件夹在 final 运行之后由 `v1_explore` 改名为 `v3_embedding_path`；`v3_score.py` 和 `embedding_path.py` 中只有文档字符串里的路径随之更新，打分逻辑没有变化。

@@ -2,7 +2,7 @@
 
 Compares NSC (ablation), the earlier cap version, and the path version on ranking, size-controlled
 pairs, within-width rho, selection regret, and a bootstrap over architectures. Development only.
-Run from project root: .venv/Scripts/python.exe analysis/v1_explore/dev_eval_path.py
+Run from project root: .venv/Scripts/python.exe analysis/v3_embedding_path/dev_eval_path.py
 """
 from pathlib import Path
 import json
