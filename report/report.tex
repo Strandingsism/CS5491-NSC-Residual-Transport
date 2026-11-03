@@ -12,7 +12,7 @@
 \titleformat{\section}{\bfseries}{\thesection}{0.5em}{}
 \titlespacing*{\section}{0pt}{5pt}{1pt}
 \usepackage[hidelinks]{hyperref}
-\hypersetup{pdftitle={Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity},
+\hypersetup{pdftitle={Where Should Capacity Count? Residual Transport and the Embedding Path in Neural Spectral Capacity},
   pdfsubject={CS5491 Project Report}}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{3pt}
@@ -32,105 +32,88 @@
 
 \begin{document}
 \begin{center}
-\textbf{Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity}\\
+\textbf{Where Should Capacity Count? Residual Transport and the Embedding Path in Neural Spectral Capacity}\\
 CS5491 Artificial Intelligence --- Project Report\\
 \TeamMembers\ifx\ContactEmail\empty\else\\ \ContactEmail\fi
 \end{center}
 
 \section{Problem and motivation}
-Neural Spectral Capacity (NSC)~[1] scores an architecture from its specification alone, $S_0=\sum_l[3H_l\psimp(d,d/H_l)+\psimp(d,d)+2\psimp(d,f_l)]$, where $\psimp(m,n,\sigma)$ is the Marchenko--Pastur estimate of $\ln\det(I+W^\top W)$ for $\sigma=0.02$. Within a matrix this has a channel interpretation, but the equal sum across layers is a modelling choice: reordering layers cannot change $S_0$, and the starter's $l/L$ weighting breaks such ties without a mechanism. We ask whether \emph{residual structure determines how much each layer should count, and whether the answer depends on where LayerNorm (LN) is placed}. All 200 archived LiteTransformerSearch~[2] models are Post-LN (\texttt{pre\_lnorm=false}), so the placement decides what theory predicts for this panel. We contribute a specification-only derivation of per-sublayer transport weights for three placements, building on residual Jacobian products~[3] and DeepNet's Post-LN analysis~[4]; its Monte Carlo (MC) validation; and a frozen weighted score evaluated against its ablation and baselines. NSC and the evaluator are reproduced from the course starter.
+Neural Spectral Capacity (NSC)~[1] scores an architecture from its specification alone, $S_0=\sum_l[3H_l\psimp(d,d/H_l)+\psimp(d,d)+2\psimp(d,f_l)]$, where $\psimp(m,n,\sigma)$ is the Marchenko--Pastur estimate of $\ln\det(I+W^\top W)$ at $\sigma=0.02$. Two choices in this sum ignore the computational graph: every layer counts equally, and the tied adaptive embedding, through which every token enters and leaves the network, is not counted at all. We study both on the course panel of 200 archived LiteTransformerSearch~[2] decoders (100 development, 100 final), all Post-LN with Transformer-XL memory and adaptive embeddings. \emph{Study~1} asks whether residual structure determines how much each layer should count; it derives per-sublayer transport weights and finds that Post-LN makes them nearly uniform (a negative result). \emph{Study~2} uses that finding to score the embedding path, which NSC misses; it improves ranking on held-out architectures. NSC and the evaluator come from the course starter.
 
-\section{Method}
-\textbf{Reference model.} Sublayers $s=1,\dots,2L$ alternate attention and FFN. Post-LN updates $x\leftarrow\mathrm{LN}(x+F_s(x))$, Pre-LN $x\leftarrow x+F_s(\mathrm{LN}(x))$ with a final LN, and ``none'' $x\leftarrow x+F_s(x)$. Weights are i.i.d.\ $\mathcal N(0,\sigma^2)$ with NSC's $\sigma=0.02$; biases are zero, LN gains one, no dropout. At this scale attention logits are near zero, so attention is uniform causal averaging over $K_i=\text{mem}+i$ keys followed by $W_VW_O$; memory enters the forward pass but is detached in the backward pass, as in Transformer-XL~[9]. FFN is $W_2\,\mathrm{ReLU}(W_1x)$. Input tokens are i.i.d.; $n=\text{mem}=192$ as in the archive.
+\textbf{Protocol and disclosure.} All design choices used development labels only. Study~1 was frozen (git tag \texttt{v2-frozen}) and evaluated once on the final split. Study~2 was proposed afterwards from development data, frozen with a pre-registered analysis plan (tag \texttt{v3-frozen}), and evaluated once on the same final split. The final split was therefore used twice; Study~2 used no information from it.
 
-\textbf{Score and ablation.} With $u_s$ the branch output of sublayer $s$, $y$ the network output and $\delta$ an i.i.d.\ unit perturbation, the transport factor and the score are
-\begin{equation*}
-T_s=\tfrac{1}{nd}\,\mathbb E\bigl\|(\partial y/\partial u_s)\,\delta\bigr\|^2,\qquad S=\textstyle\sum_s T_s\Psi_s,
-\end{equation*}
-where $\Psi_s$ splits NSC by sublayer: $3H\psimp(d,d/H)+\psimp(d,d)$ for attention and $2\psimp(d,f)$ for FFN. The ablation $T_s\equiv1$ is exactly $S_0$. As $\sigma\to0$, $T_s\to1-2/d$ (with LN) or $1$ (none), so $S$ becomes a constant multiple of NSC.
+\section{Study 1: residual transport weights}
+\textbf{Method.} With $u_s$ the output of residual branch $s$ (attention or FFN), $y$ the network output and $\delta$ an i.i.d.\ unit perturbation, we weight each sublayer by $T_s=\frac{1}{nd}\mathbb E\|(\partial y/\partial u_s)\delta\|^2$ at initialization, giving $S=\sum_sT_s\Psi_s$ with $\Psi_s$ the sublayer's NSC terms; $T_s\equiv1$ recovers NSC. We derive $T_s$ from the specification with a mean-field recursion over per-token energy and pairwise token correlation, for Post-LN, Pre-LN and no normalization. The model assumes $\mathcal N(0,\sigma^2)$ weights, uniform causal attention at small initialization, memory detached in the backward pass~[9] and ReLU arc-cosine kernels~[8], building on residual Jacobian products~[3] and DeepNet's Post-LN analysis~[4].
 
-\textbf{Mean-field recursion.} We track per-token energy $E$ and mean pairwise token correlation $\rho$. With branch gains $a=d^2\sigma^4$ (attention) and $b=fd\sigma^4/2$ (FFN), a unit-energy input produces output energy $m$ and pairwise product $p$: $m=a[c_1+\rho(1-c_1)]$, $p=a[c_2+\rho(1-c_2)]$ for attention and $m=b$, $p=2bk_1(\rho)$ for FFN, where $c_1,c_2$ are causal averages of $1/K$ and $k_0,k_1$ are ReLU arc-cosine kernels~[8]. In Post-LN, $\rho\leftarrow(\rho+p)/(1+m)$ and LN resets $E=1$. Backward, a perturbation from $s$ starts with energy $\nu=1/(1+m_s)$ and pairwise product $q=0$. Each later attention applies $\nu\mathrel{+}=a(A_1\nu+A_2q)$, $q\mathrel{+}=a(B_1\nu+B_2q)$, whose coefficients count only current, non-memory tokens; each FFN applies $\nu\mathrel{*}=1+b$, $q\mathrel{*}=1+2bk_0(\rho_t)$; each LN divides both by $1+m_t$. Finally $T_s=(1-2/d)\,\nu$. Pre-LN and none use the same quantities without the per-step division.
+\textbf{Why Post-LN nearly cancels.} Each later sublayer multiplies the transported energy by $(1+g_t)/(1+m_t)$: its Jacobian gain over the forward gain that its LayerNorm divides out. For FFN $g_t=m_t$ exactly; for attention $g_t$ is slightly smaller because correlated tokens~[6,7] and memory add forward energy that a perturbation does not see. Hence $T_s\approx(1-2/d)/(1+m_s)$, nearly position-independent, with only a weak late-layer tilt consistent with~[4,5]. Without the division (Pre-LN, none), early layers dominate, opposite to the starter's $l/L$ example.
 
-\textbf{Why Post-LN nearly cancels.} Each later sublayer multiplies the transported energy by $(1+g_t)/(1+m_t)$: its Jacobian gain over the forward gain that its LN divides out. For FFN, $g_t=m_t$ exactly. For attention, $g_t<m_t$, because correlated tokens (the onset of rank collapse~[6,7]) add common-mode energy forward that a perturbation does not see, and memory contributes only forward. Hence $T_s\approx(1-2/d)/(1+m_s)$ times a product slightly below one. The weight depends mainly on the sublayer's own width, and earlier sublayers are transported slightly less, in line with larger gradients near the output in Post-LN~[4,5]. Without the division (Pre-LN, none), $\prod_{t>s}(1+g_t/E_t)$ grows towards the input and early layers dominate, which is the opposite of $l/L$.
+\textbf{Validation and result.} On random residual networks with softmax attention and memory (28 development specifications, 10 seeds, $n=\text{mem}=192$), the prediction has 0.81\% RMS error for Post-LN (Fig.~\ref{fig:fig1}a). On the panel, Post-LN weights lie in 0.84--1.00, and the weighted score is indistinguishable from NSC: final Spearman $\rho$ 0.9667 versus 0.9659, with identical selection (Table~\ref{tab:rank}). The lasting finding is mechanistic: \emph{under Post-LN, a branch's overall scale is divided out}, so equal summation across residual layers is the first-order correct aggregation.
 
-\section{Validation of the derivation (no labels used)}
 \begin{figure}[t]
-\centering\includegraphics[width=\linewidth]{transport_profiles.pdf}
-\caption{Predicted $T_s$ (lines) and MC measurements (dots). (a) Archive setting, one $d=256$, $L=16$ development model, 10 seeds, $\pm2$ s.e. (b) Strong-signal check outside the archive ($\sigma=0.04$).}
-\label{fig:profiles}
+\centering\includegraphics[width=\linewidth]{figure1.pdf}
+\caption{(a) Study~1: predicted $T_s$ (lines) and Monte Carlo measurements ($\pm2$ s.e.); Post-LN is nearly flat. (b) Study~2: development residual of log PPL after a within-width fit on log NSC, by embedding width. The benefit of a wider embedding stops near $d_{\mathrm{embed}}=d$ (dotted lines).}
+\label{fig:fig1}
 \end{figure}
 
+\section{Study 2: capacity of the embedding path}
+\textbf{Evidence from data (development only).} Within each width, the residual of log PPL after log projection parameters correlates strongly with the embedding width $d_{\mathrm{embed}}$ (Spearman $-0.01$, $-0.66$, $-0.72$, $-0.87$ for $d=64$ to 512). $d_{\mathrm{embed}}\in\{128,256,512\}$ is assigned independently of the layer configuration (within-width Spearman with projection parameters between $-0.12$ and $0.01$), which makes this a natural experiment. NSC ignores the embedding; total parameter count includes it but counts the $\sim$50k-row tables entry by entry, which ranks models poorly ($\rho=0.73$).
+
+\textbf{Mechanism.} In the adaptive embedding~[10], each token reaches the residual stream through its cluster's table $E$ ($v$ tokens $\times$ $w$ columns, $w=d_{\mathrm{embed}}/\text{div}^i$) and a $w\times d$ projection $P$; the tied softmax reuses the same tables. The path $EP$ has rank at most $\min(w,d)$, so a table wider than $d$ should stop helping. Fig.~\ref{fig:fig1}b shows this saturation: at $d=64$ every table is wider than $d$ and width has no effect; at $d=128$ the gain stops after 256 (tail clusters $256/\text{div}^i$ still fit); at $d=512$ it continues to 512. To score the path we use Study~1's result that Post-LN removes $P$'s overall scale, and take $P$ variance-preserving, $\mathcal N(0,1/w)$. Since $v\gg w$ ($w/v\le0.05$), $E^\top E\approx\sigma^2vI$, so $EP$ has the spectrum of a $w\times d$ matrix with entries $\mathcal N(0,\sigma^2v/w)$:
+\begin{equation*}
+S_{\text{v3}}=S_0+\textstyle\sum_{\text{tables}}\psimp\bigl(w,\,d,\,\sigma\sqrt{v/w}\bigr),
+\end{equation*}
+counting each tied table once (a $\text{div}=1$ table with $d_{\mathrm{embed}}=d$ has no projection and contributes $\psimp(v,d,\sigma)$). The ablation removes the embedding term, which recovers NSC exactly. Table shapes reproduce the archive's embedding parameter counts exactly for all 200 models. The formula matches Monte Carlo spectra of $EP$ within 0.4\% RMS over all 60 table shapes in the panel, whereas the literal product at $\sigma=0.02$ is negligible: the score relies on scale invariance, not on raw initial spectra. In a controlled pair with identical layers ($d=256$, $L=6$), NSC ties at 1610.9 for $d_{\mathrm{embed}}=128/256/512$, while $S_{\text{v3}}$ gives 2050.5, 2391.0 and 2323.9: it saturates at $d_{\mathrm{embed}}=d$, where a table without projection scores slightly higher.
+
+\section{Results on development and held-out final architectures}
 \begin{table}[t]
 \centering
-\caption{MC validation at $n=\text{mem}=192$: 28 development models, 532 sublayers per placement.}
-\label{tab:mc}
-\begin{tabular}{lccccc}
-\toprule
-Placement & RMS error (95\% CI) & excl.\ first & MC s.e. & profile corr. & max/min \\
-\midrule
-Post-LN (archive) & 0.81\% (0.64--0.96) & 0.45\% & 0.33\% & 0.92 & 1.06 \\
-Pre-LN & 2.80\% (2.16--3.40) & 2.79\% & 0.41\% & 0.999 & 1.15 \\
-none & 0.24\% (0.21--0.28) & 0.24\% & 0.20\% & 0.999 & 1.15 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-We built random residual networks with full softmax attention, memory from two warm-up segments and finite-difference Jacobian probes, for 28 development specifications (depth quantiles within each width) with 10 seeds and 2 probes (Fig.~\ref{fig:profiles}a, Table~\ref{tab:mc}; medians for s.e., profile correlation and max/min). In Post-LN the error is close to MC noise once the first sublayer is excluded. That sublayer is biased by about $3/d$ because the reference feeds unnormalized $\mathcal N(0,1)$ input to the first LN; in Pre-LN this raw input persists in the stream, so the final LN carries the same offset to every sublayer, changing scale but not shape. An earlier i.i.d.-token version had 3.3\% RMS error (10\% maximum), which motivated the correlation term. In a strong-signal regime ($\sigma=0.03$--$0.05$, Fig.~\ref{fig:profiles}b) errors stay at 0.7--4\%, while measured weight spreads reach $3.2\times$ without normalization but only $1.1$--$1.25\times$ in Post-LN.
-
-For the starter's reorder pair ($d=128$, FFN widths $[256,512]$ vs.\ $[512,256]$, tied at 121.820 by NSC), the Post-LN score gives 119.6127 vs.\ 119.6123, barely breaking the tie. Pre-LN (119.43 vs.\ 119.36) and none (122.28 vs.\ 122.21) favour the wider early layer, whereas $l/L$ (96.96 vs.\ 85.77) favours the opposite. On the development panel, Post-LN weights span 0.84--1.00, with a median within-model max/min of 1.025; Pre-LN weights span 0.49--1.00.
-
-\section{Ranking and selection}
-\textbf{Protocol.} All choices used the 100 development architectures (validation PPL). We then froze the method (git tag \texttt{v2-frozen}) and evaluated the 100 final architectures (test PPL) once. Besides the required baselines, we report mismatched Pre-LN weights, depth and projection parameters $\sum_l(4d^2+2df_l)$. Size-controlled pairs share $d$ and have a total-parameter ratio $\ge0.90$ (180 development, 185 final; they overlap and are not independent).
-
-\begin{table}[t]
-\centering
-\caption{Rank correlation with negative PPL; ctl = size-controlled pairs; flips = final pairs ordered differently from NSC (all / controlled). Only depth and FLOPs have score ties.}
+\caption{Spearman $\rho$ with negative PPL; final Kendall $\tau_b$, size-controlled $\tau_b$ (same $d$, total parameters within 10\%; 185 overlapping pairs) and within-width $\rho$. No method below has score ties.}
 \label{tab:rank}
-\begin{tabular}{lccccccc}
+\begin{tabular}{lcccccc}
 \toprule
-& \multicolumn{3}{c}{Development} & \multicolumn{3}{c}{Final (held out)} & \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-Score & $\rho$ & $\tau_b$ & ctl $\tau_b$ & $\rho$ & $\tau_b$ & ctl $\tau_b$ & flips \\
+& Dev & \multicolumn{5}{c}{Final (held out)} \\
+\cmidrule(lr){2-2}\cmidrule(lr){3-7}
+Score & $\rho$ & $\rho$ & $\tau_b$ & ctl $\tau_b$ & $\rho_{d=64/128/256}$ & $\rho_{d=512}$ \\
 \midrule
-\textbf{Ours (Post-LN)} & 0.970 & 0.861 & 0.622 & 0.967 & 0.844 & 0.330 & 5 / 0 \\
-Ablation = NSC & 0.970 & 0.861 & 0.622 & 0.966 & 0.843 & 0.330 & -- \\
-$l/L$ example & 0.970 & 0.865 & 0.622 & 0.969 & 0.853 & 0.319 & 97 / 11 \\
-Pre-LN weights & 0.971 & 0.865 & 0.644 & 0.967 & 0.845 & 0.330 & 9 / 2 \\
-Projection params & 0.970 & 0.861 & 0.600 & 0.964 & 0.841 & 0.308 & 23 / 4 \\
-Reference FLOPs & 0.968 & 0.859 & 0.622 & 0.965 & 0.842 & 0.330 & 22 / 2 \\
-Total params & 0.728 & 0.576 & 0.133 & 0.742 & 0.590 & 0.276 & 1134 / 57 \\
-Depth & 0.479 & 0.360 & 0.652 & 0.485 & 0.362 & 0.379 & 1238 / 6 \\
+\textbf{Study 2 (v3)} & \textbf{0.983} & \textbf{0.980} & \textbf{0.886} & \textbf{0.373} & .940/.947/.950 & \textbf{0.749} \\
+Study 1 (v2) & 0.970 & 0.967 & 0.844 & 0.330 & .919/.917/.896 & 0.659 \\
+NSC (ablation) & 0.970 & 0.966 & 0.843 & 0.330 & .919/.917/.896 & 0.659 \\
+$l/L$ example & 0.970 & 0.969 & 0.853 & 0.319 & .896/.895/.908 & 0.659 \\
+Projection params & 0.970 & 0.964 & 0.841 & 0.308 & .898/.917/.896 & 0.658 \\
+Reference FLOPs & 0.968 & 0.965 & 0.842 & 0.330 & .924/.921/.900 & 0.658 \\
+Total params & 0.728 & 0.742 & 0.590 & 0.276 & .177/.387/.889 & 0.834 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[t]
 \centering
-\caption{Final-split selection: mean regret in PPL (best selected minus best feasible) over 200 tie-break or random trials. Pool sizes 25/57/79/96.}
+\caption{Final-split selection: mean regret in PPL (best of top-$k$ minus best feasible) over 200 tie-break or random trials. Pool sizes 25/57/79/96.}
 \label{tab:sel}
 \begin{tabular}{lcccccccc}
 \toprule
 Cap / $k$ & 10M/1 & 10M/3 & 20M/1 & 20M/3 & 30M/1 & 30M/3 & 50M/1 & 50M/3 \\
 \midrule
-Ours, NSC, $l/L$, FLOPs & 0 & 0 & 1.14 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
+v3, v2, NSC, $l/L$, FLOPs & 0 & 0 & 1.14 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
 Projection params & 0 & 0 & 0.85 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
 Total params & 3.72 & 3.72 & 8.44 & 1.49 & 0 & 0 & 1.13 & 1.13 \\
-Depth & 14.42 & 8.32 & 15.44 & 4.26 & 3.45 & 0.00 & 3.46 & 1.60 \\
 Random & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Results.} The weighted score and its ablation are indistinguishable (Tables~\ref{tab:rank}, \ref{tab:sel}): final $\rho$ is 0.9667 versus 0.9659, and selection is identical in all eight cap/$k$ cells on both splits. Across both splits only 7 pairs change order relative to NSC (5 become correct, 2 wrong). All are near-ties within 1.2\%, and 6 compare different widths, so they reflect the width-dependent scale $(1-2/d)/(1+m_s)$ rather than layer position. Pre-LN weights also give the same final selection, so neither weighting helps. On development, NSC's only non-zero 10M regret (1.94 at $k=1$) came from one top-1 swap and did not recur on the final split.
+\textbf{Ranking.} The pre-registered hypothesis was that $\rho(\text{v3})>\rho(\text{NSC})$ on the final split with a bootstrap 95\% interval (architectures resampled 5000 times) above zero. It holds: $\Delta\rho=+0.015$ [+0.006, +0.028], replicating the development gain of +0.014 [+0.006, +0.026] (Table~\ref{tab:rank}). The largest gain is within $d=512$ (+0.090), where NSC is weakest and the embedding is the smallest stage relative to the layers. Size-controlled $\tau_b$ rises from 0.330 to 0.373. Removing the bottleneck (adding the full embedding capacity) lowers development $\rho$ to 0.924, so the gain comes from the rank-limited path, not from counting embeddings as such. We predicted that v3 would rank $d=64$ models worse than NSC, as it did on development; on final it ranks them better (0.940 vs 0.919), so this prediction failed and the development weakness may have been noise.
+
+\textbf{Selection.} Budgeted top-$k$ selection is identical for v3 and NSC in all eight cells (Table~\ref{tab:sel}): within a parameter cap, the best models are the largest ones, and v3 changes the order among models of similar size rather than across sizes.
 
 \section{Discussion and limitations}
-\textbf{What the score learns beyond size.} Very little on this panel. NSC is almost rank-identical to projection parameters (development Spearman 0.9997). Its advantage over total parameters comes from excluding embeddings: within $d=64$, $\rho$ is 0.98 versus 0.09 on development and 0.92 versus 0.18 on final. Post-LN transport is nearly constant within a model, so it cannot add much either. The derived weights would matter where normalization does not divide out residual growth, i.e.\ Pre-LN models, which this panel lacks; testing that needs new trained outcomes. The result is a supported negative one: under Post-LN and small initialization, equal summation is the first-order aggregation implied by residual structure.
+\textbf{What the scores learn beyond size.} NSC is nearly rank-identical to projection parameters (development Spearman 0.9997); Study~1 shows that residual transport cannot change this under Post-LN. Study~2 adds information that size counts miss: the capacity of a serial stage that every token passes, limited by its rank.
 
-\textbf{Instability of size control.} For every score, controlled $\tau_b$ falls from about 0.62 on development to about 0.33 on final. This is a property of the panel's near-size pairs, not of any method.
+\textbf{Aggregation.} We also tested a series rule, $1/S=1/S_0+2/E$, motivated by the embedding being in series with the residual stack. Pre-registered as likely to fail, it did (development $\rho$ 0.930): $\psimp$ sums measure stored capacity, not per-token throughput, so they cannot enter a bottleneck rule directly. Within residual layers summation is supported; across serial stages the right composition remains open, which bears on NSC's sum-versus-product question.
 
-\textbf{Scope.} $T_s$ describes signal propagation at initialization, not learning: a branch with zero output can still learn, which we verified on a small example. The model omits relative position attention, adaptive embeddings, dropout and softmax non-uniformity, and assumes i.i.d.\ inputs. The archive has one outcome per architecture, so reported variability covers only tie-breaking and random selection, not training seeds.
+\textbf{Limitations.} Before freezing v3 we examined several embedding variants on development labels (uncapped, rank-capped, Zipf-weighted, two fitted log forms, two series forms); the chosen formula was fixed from label-free checks before its own development evaluation. The final split was used twice. Capacities describe initialization, not training; the reference model omits relative position attention, dropout and attention non-uniformity. The archive has one outcome per architecture and no seeds, so the reported variability covers architecture resampling and tie-breaking only.
 
-\textbf{Reproducibility and LLM use.} The repository README lists the environment and exact commands; the frozen method is tag \texttt{v2-frozen}. Scoring 100 architectures takes 0.12\,s cold and 5\,ms warm (NSC: 0.12\,s and 0.4\,ms) on an Intel Core Ultra 9 290HX; the MC validation takes 27\,min on 22 processes. Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code and drafting. All numbers come from the repository's scripts, and the team is responsible for the content.
+\textbf{Reproducibility and LLM use.} The repository README lists the environment and every command. Methods are frozen at tags \texttt{v2-frozen} and \texttt{v3-frozen}. Scoring 100 architectures takes about 0.1\,s on an Intel Core Ultra 9 290HX (standard library). Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code and drafting. All numbers come from the repository's scripts, and the team is responsible for the content.
 
 \newpage
 \textbf{References}
@@ -145,5 +128,6 @@ Random & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
 [7]~Noci et al. Signal propagation in Transformers: Theoretical perspectives and the role of rank collapse. NeurIPS 2022.\par
 [8]~Cho, Saul. Kernel methods for deep learning. NeurIPS 2009.\par
 [9]~Dai et al. Transformer-XL: Attentive language models beyond a fixed-length context. ACL 2019.\par
+[10]~Baevski, Auli. Adaptive input representations for neural language modeling. ICLR 2019.\par
 \endgroup
 \end{document}
