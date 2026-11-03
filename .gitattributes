@@ -1,0 +1,2 @@
+# Keep bytes exact: check_starter.py verifies SHA-256 hashes of data files.
+* -text

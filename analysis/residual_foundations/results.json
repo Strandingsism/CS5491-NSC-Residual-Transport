@@ -1,0 +1,304 @@
+{
+  "zero_branch": [
+    {
+      "case": "zero_output_only",
+      "forward_branch_energy": 0.0,
+      "input_jacobian_condition": 1.0,
+      "tangent_rank": 16,
+      "loss_before": 2.0,
+      "loss_after": 1.6199999999999997,
+      "parameter_jacobian_fd_error": 2.6755486715046572e-11
+    },
+    {
+      "case": "both_matrices_zero",
+      "forward_branch_energy": 0.0,
+      "input_jacobian_condition": 1.0,
+      "tangent_rank": 0,
+      "loss_before": 2.0,
+      "loss_after": 2.0,
+      "parameter_jacobian_fd_error": 0.0
+    }
+  ],
+  "coordinate_scaling": [
+    {
+      "scale": 1.0,
+      "learning_rate": 0.1,
+      "initial_output": 1.0,
+      "tangent_kernel": 1.0,
+      "loss_after": 0.4049999999999999
+    },
+    {
+      "scale": 10.0,
+      "learning_rate": 0.1,
+      "initial_output": 1.0,
+      "tangent_kernel": 100.0,
+      "loss_after": 40.5
+    },
+    {
+      "scale": 10.0,
+      "learning_rate": 0.001,
+      "initial_output": 1.0,
+      "tangent_kernel": 100.0,
+      "loss_after": 0.4049999999999999
+    }
+  ],
+  "equal_logdet": {
+    "identity": 1.3862943611198906,
+    "rank_one": 1.3862943611198906
+  },
+  "depth_summary": [
+    {
+      "depth": 4,
+      "strength": 0.1,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 2.313131760117972,
+        "std": 0.02864841847990851
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.09772583439959293,
+        "std": 0.0015308528689085322
+      },
+      "input_jacobian_log_condition": {
+        "mean": 0.8421046114743875,
+        "std": 0.03511290718971026
+      },
+      "input_jacobian_energy": {
+        "mean": 1.0988914422929044,
+        "std": 0.021239548406112467
+      }
+    },
+    {
+      "depth": 4,
+      "strength": 1.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 2.313131760117972,
+        "std": 0.02864841847990851
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.8184880155514879,
+        "std": 0.011630154030333021
+      },
+      "input_jacobian_log_condition": {
+        "mean": 2.936979714188132,
+        "std": 0.1563787437711444
+      },
+      "input_jacobian_energy": {
+        "mean": 2.4221477832472758,
+        "std": 0.1488866957218598
+      }
+    },
+    {
+      "depth": 4,
+      "strength": 4.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 2.313131760117972,
+        "std": 0.02864841847990851
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 2.313131760117972,
+        "std": 0.02864841847990851
+      },
+      "input_jacobian_log_condition": {
+        "mean": 10.045198030793737,
+        "std": 1.88741946331161
+      },
+      "input_jacobian_energy": {
+        "mean": 15.829002679195105,
+        "std": 1.8177141926272957
+      }
+    },
+    {
+      "depth": 16,
+      "strength": 0.1,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 9.237703682909581,
+        "std": 0.0672938489700416
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.09931651359493376,
+        "std": 0.0010103779512440078
+      },
+      "input_jacobian_log_condition": {
+        "mean": 0.842252104920885,
+        "std": 0.03226014503480588
+      },
+      "input_jacobian_energy": {
+        "mean": 1.1085256390897238,
+        "std": 0.02427547445281239
+      }
+    },
+    {
+      "depth": 16,
+      "strength": 1.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 9.237703682909581,
+        "std": 0.0672938489700416
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.9418639256129785,
+        "std": 0.009185218935446084
+      },
+      "input_jacobian_log_condition": {
+        "mean": 2.83005767059683,
+        "std": 0.11510262966512735
+      },
+      "input_jacobian_energy": {
+        "mean": 2.6334562740812895,
+        "std": 0.2270572442169722
+      }
+    },
+    {
+      "depth": 16,
+      "strength": 4.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 9.237703682909581,
+        "std": 0.0672938489700416
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 3.2677649804368833,
+        "std": 0.028847461929658404
+      },
+      "input_jacobian_log_condition": {
+        "mean": 6.80551634656189,
+        "std": 0.3792692994407743
+      },
+      "input_jacobian_energy": {
+        "mean": 35.30716090718343,
+        "std": 7.36294468078888
+      }
+    },
+    {
+      "depth": 64,
+      "strength": 0.1,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 36.9440368258086,
+        "std": 0.1287175623572792
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.09968393975632478,
+        "std": 0.00047839037168654285
+      },
+      "input_jacobian_log_condition": {
+        "mean": 0.8404100297977931,
+        "std": 0.04295573888645461
+      },
+      "input_jacobian_energy": {
+        "mean": 1.1176753269450703,
+        "std": 0.021126384737525476
+      }
+    },
+    {
+      "depth": 64,
+      "strength": 1.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 36.9440368258086,
+        "std": 0.1287175623572792
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.9829889630283746,
+        "std": 0.004662063115657234
+      },
+      "input_jacobian_log_condition": {
+        "mean": 2.8344564267354535,
+        "std": 0.16095644779365756
+      },
+      "input_jacobian_energy": {
+        "mean": 2.7929267709194803,
+        "std": 0.27315351707471547
+      }
+    },
+    {
+      "depth": 64,
+      "strength": 4.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 36.9440368258086,
+        "std": 0.1287175623572792
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 3.764092871660558,
+        "std": 0.017239145350417238
+      },
+      "input_jacobian_log_condition": {
+        "mean": 6.70558984241843,
+        "std": 0.3082686154272619
+      },
+      "input_jacobian_energy": {
+        "mean": 52.48562925201286,
+        "std": 15.906202034471054
+      }
+    },
+    {
+      "depth": 128,
+      "strength": 0.1,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 73.95391184117351,
+        "std": 0.16636345069366276
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.09987821569777722,
+        "std": 0.0003089869285740403
+      },
+      "input_jacobian_log_condition": {
+        "mean": 0.8458202944365851,
+        "std": 0.0399519979940724
+      },
+      "input_jacobian_energy": {
+        "mean": 1.1149203391854114,
+        "std": 0.021632362016217318
+      }
+    },
+    {
+      "depth": 128,
+      "strength": 1.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 73.95391184117351,
+        "std": 0.16636345069366276
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 0.9917434408033081,
+        "std": 0.003050678931736675
+      },
+      "input_jacobian_log_condition": {
+        "mean": 2.8908048244614464,
+        "std": 0.14225563176708964
+      },
+      "input_jacobian_energy": {
+        "mean": 2.790601348639568,
+        "std": 0.24450585733378336
+      }
+    },
+    {
+      "depth": 128,
+      "strength": 4.0,
+      "seeds": 24,
+      "raw_matrix_spectral_sum_per_dim": {
+        "mean": 73.95391184117351,
+        "std": 0.16636345069366276
+      },
+      "scaled_matrix_spectral_sum_per_dim": {
+        "mean": 3.8776778349949765,
+        "std": 0.011716496353553619
+      },
+      "input_jacobian_log_condition": {
+        "mean": 6.7604329930155735,
+        "std": 0.34102450891991304
+      },
+      "input_jacobian_energy": {
+        "mean": 55.614114279675995,
+        "std": 16.672748365063956
+      }
+    }
+  ],
+  "notes": "Synthetic linear residual models only; SVD scores are not official NSC-MP."
+}

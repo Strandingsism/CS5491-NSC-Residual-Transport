@@ -1,0 +1,23 @@
+{
+  "version": "CS5491-202627A-v1",
+  "count": 200,
+  "source_file": "gpt2_benchmark.json (course benchmark archive)",
+  "source_sha256": "d88369ab4b74c77da1d52c9169516de0a5073c5ed44ac6cc98abd59b68156db9",
+  "source_attribution": "Archive README attributes the panel to LiteTransformerSearch (NeurIPS 2022), used in the NSC GPT-2 benchmark experiment. Upstream per-run provenance has not been independently reconstructed.",
+  "source_paper": "https://arxiv.org/abs/2203.02094",
+  "nsc_paper": "https://arxiv.org/abs/2609.23087",
+  "transformations": "Preserve all architecture configurations and reported parameter fields. Separate 100 development validation-PPL labels and 100 final test-PPL labels. Assign architectures within each width by SHA-256 of a fixed prefix plus canonical JSON; no outcomes used. Omit unused labels.",
+  "limitations": [
+    "Single recorded endpoint per architecture; seeds, training tokens, exact training code revision and hardware are absent.",
+    "Archive calls this a GPT-2/Transformer-XL panel. Configurations contain memory and adaptive-embedding fields. Do not relabel it as a modern pre-normalized GPT decoder.",
+    "No trained labels for synthetic reorderings, MoE, GQA/MLA, loops or hyperconnections.",
+    "Final labels are held out by course protocol, not access control. Do not inspect or tune on them before freezing the method."
+  ],
+  "hashes": {
+    "architectures.json": "4e1972de8e7bb75c1c796ba44899c1fc174f840e46e3bebc6120951e8fcc3638",
+    "development_labels.json": "3451d481876a07c7ede1df6de606b6239f4cad097dd63b1de4d3895e568ed482",
+    "final_labels.json": "9e849ec8ba53f5ca8d40f54cc05d79beec332250d0c3c419e2c6470b39853565",
+    "resources.json": "ef3c889a22a876a184fcdc6d51445a3f03d719eed0f8a4ed4493a0da3523ebdc",
+    "splits.json": "28cdee2b18380d1f843d5a8e7126b4e3584a506435f90f8fd241408ed193f6a6"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "setting": {
+    "n": 192,
+    "mem": 192,
+    "seeds": 10,
+    "probes": 2,
+    "quantiles": [
+      0,
+      0.2,
+      0.4,
+      0.5,
+      0.6,
+      0.8,
+      1
+    ],
+    "bootstrap": 2000
+  },
+  "subset": [
+    "config_11_j5",
+    "config_6_j0",
+    "config_3_j5",
+    "config_9_j1",
+    "config_11_j7",
+    "config_12_j2",
+    "config_9_j7",
+    "config_15_j1",
+    "config_18_j8",
+    "config_17_j2",
+    "config_13_j2",
+    "config_14_j5",
+    "config_13_j0",
+    "config_9_j0",
+    "config_1_j6",
+    "config_18_j3",
+    "config_16_j6",
+    "config_15_j3",
+    "config_16_j4",
+    "config_11_j6",
+    "config_19_j1",
+    "config_11_j2",
+    "config_5_j8",
+    "config_4_j1",
+    "config_2_j5",
+    "config_0_j6",
+    "config_14_j3",
+    "config_14_j7"
+  ],
+  "summary": {
+    "post": {
+      "configs": 28,
+      "sublayers": 532,
+      "rel_error_mean": -0.0030952364380179564,
+      "rel_error_rms": 0.008055126912053978,
+      "rel_error_rms_ci95": [
+        0.006435827707216101,
+        0.009637178555883186
+      ],
+      "rel_error_max_abs": 0.05655794175676354,
+      "rel_error_rms_excl_first": 0.004496550388930896,
+      "config_mean_T_rel_error_rms": 0.004872141736575915,
+      "config_mean_T_rel_error_max_abs": 0.013856395388956555,
+      "mc_rel_se_median": 0.003289756150169195,
+      "z_rms": 1.8084404313027815,
+      "frac_within_2se": 0.8947368421052632,
+      "profile_corr_mean": 0.8144899221598481,
+      "profile_corr_median": 0.9175560004065606,
+      "measured_max_over_min_median": 1.0572687347305734,
+      "rho_last_measured_mean": 0.07026684679440866,
+      "rho_last_v2_mean": 0.0711276488591944
+    },
+    "pre": {
+      "configs": 28,
+      "sublayers": 532,
+      "rel_error_mean": -0.023313551352970047,
+      "rel_error_rms": 0.028009896971378626,
+      "rel_error_rms_ci95": [
+        0.021600395703231485,
+        0.03399468787784039
+      ],
+      "rel_error_max_abs": 0.05942480329470756,
+      "rel_error_rms_excl_first": 0.027896622558008972,
+      "config_mean_T_rel_error_rms": 0.028385251304529686,
+      "config_mean_T_rel_error_max_abs": 0.05357933418717575,
+      "mc_rel_se_median": 0.004146917434235927,
+      "z_rms": 6.899069313503821,
+      "frac_within_2se": 0.10150375939849623,
+      "profile_corr_mean": 0.9950350194056169,
+      "profile_corr_median": 0.9994150260677831,
+      "measured_max_over_min_median": 1.146641538683042,
+      "rho_last_measured_mean": 0.0592195569794941,
+      "rho_last_v2_mean": 0.059289992046060246
+    },
+    "none": {
+      "configs": 28,
+      "sublayers": 532,
+      "rel_error_mean": 0.0002301100005484881,
+      "rel_error_rms": 0.002417555667038968,
+      "rel_error_rms_ci95": [
+        0.0020866525138653266,
+        0.0027514346674505498
+      ],
+      "rel_error_max_abs": 0.010071561899686055,
+      "rel_error_rms_excl_first": 0.0024024080347148607,
+      "config_mean_T_rel_error_rms": 0.0010006669653263294,
+      "config_mean_T_rel_error_max_abs": 0.0021570241371491328,
+      "mc_rel_se_median": 0.00200634423982962,
+      "z_rms": 1.2187799204020893,
+      "frac_within_2se": 0.900375939849624,
+      "profile_corr_mean": 0.9945856902188744,
+      "profile_corr_median": 0.9994892068848912,
+      "measured_max_over_min_median": 1.153786971891476,
+      "rho_last_measured_mean": 0.07062018703115534,
+      "rho_last_v2_mean": 0.0711276488591944
+    }
+  },
+  "hardware": {
+    "processor": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+    "cpus": 24,
+    "workers": 22,
+    "python": "3.12.14",
+    "numpy": "2.5.4"
+  },
+  "seconds": 1646.9133569999995
+}

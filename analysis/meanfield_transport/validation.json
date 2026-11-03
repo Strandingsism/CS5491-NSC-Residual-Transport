@@ -1,0 +1,127 @@
+{
+  "subset": [
+    "config_11_j5",
+    "config_9_j1",
+    "config_9_j7",
+    "config_15_j1",
+    "config_13_j2",
+    "config_9_j0",
+    "config_1_j6",
+    "config_15_j3",
+    "config_19_j1",
+    "config_11_j2",
+    "config_2_j5",
+    "config_14_j7"
+  ],
+  "summary": {
+    "n64_mem0_post": {
+      "v1": {
+        "rel_error_mean": 0.0142600813294754,
+        "rel_error_rms": 0.03264584206415704,
+        "rel_error_max_abs": 0.09942153055609904,
+        "profile_corr_mean": 0.6333027096374706
+      },
+      "v2": {
+        "rel_error_mean": 0.0013267376810282491,
+        "rel_error_rms": 0.012039332631948008,
+        "rel_error_max_abs": 0.05427067700186394,
+        "profile_corr_mean": 0.7020528468334122
+      },
+      "rho_abs_error_mean": 0.0038366735957047456,
+      "rho_measured_last_mean": 0.07860240938249534,
+      "rho_v2_last_mean": 0.07487097680254418,
+      "measured_max_over_min_median": 1.0643103373722786
+    },
+    "n64_mem0_pre": {
+      "v1": {
+        "rel_error_mean": -0.007629504654519294,
+        "rel_error_rms": 0.03253535109600776,
+        "rel_error_max_abs": 0.06103715794620512,
+        "profile_corr_mean": 0.9629756676106735
+      },
+      "v2": {
+        "rel_error_mean": -0.017478190196248546,
+        "rel_error_rms": 0.025959848154907886,
+        "rel_error_max_abs": 0.061074073266752404,
+        "profile_corr_mean": 0.9629824529295488
+      },
+      "rho_abs_error_mean": 0.0037480979603215212,
+      "rho_measured_last_mean": 0.06468776564476826,
+      "rho_v2_last_mean": 0.06098615754765799,
+      "measured_max_over_min_median": 1.117657856183063
+    },
+    "n64_mem0_none": {
+      "v1": {
+        "rel_error_mean": -0.002781854640438381,
+        "rel_error_rms": 0.010168834778681487,
+        "rel_error_max_abs": 0.029173610200712408,
+        "profile_corr_mean": 0.9649612877446644
+      },
+      "v2": {
+        "rel_error_mean": -0.002454409966884842,
+        "rel_error_rms": 0.009640309021569463,
+        "rel_error_max_abs": 0.028757504386506816,
+        "profile_corr_mean": 0.964965524266351
+      },
+      "rho_abs_error_mean": 0.0043546792149912255,
+      "rho_measured_last_mean": 0.07976719677185391,
+      "rho_v2_last_mean": 0.07487097680254419,
+      "measured_max_over_min_median": 1.1191416281560693
+    },
+    "n64_mem64_post": {
+      "v1": {
+        "rel_error_mean": 0.012115424394551171,
+        "rel_error_rms": 0.029444039247269686,
+        "rel_error_max_abs": 0.10261179376252882,
+        "profile_corr_mean": 0.6357969989334
+      },
+      "v2": {
+        "rel_error_mean": -0.002255072879289735,
+        "rel_error_rms": 0.012850649321338968,
+        "rel_error_max_abs": 0.04764201426145931,
+        "profile_corr_mean": 0.7017920339033146
+      },
+      "rho_abs_error_mean": 0.003652577936695249,
+      "rho_measured_last_mean": 0.07512160220796553,
+      "rho_v2_last_mean": 0.07322042712023236,
+      "measured_max_over_min_median": 1.064932400175365
+    },
+    "n64_mem64_pre": {
+      "v1": {
+        "rel_error_mean": -0.006696819025122403,
+        "rel_error_rms": 0.02408962150896262,
+        "rel_error_max_abs": 0.05475874226780442,
+        "profile_corr_mean": 0.9627618534265056
+      },
+      "v2": {
+        "rel_error_mean": -0.01759591343577764,
+        "rel_error_rms": 0.02182791090292108,
+        "rel_error_max_abs": 0.054821473122224074,
+        "profile_corr_mean": 0.962766917992459
+      },
+      "rho_abs_error_mean": 0.003792049228442265,
+      "rho_measured_last_mean": 0.06214445284664422,
+      "rho_v2_last_mean": 0.05988274614364997,
+      "measured_max_over_min_median": 1.119276684352219
+    },
+    "n64_mem64_none": {
+      "v1": {
+        "rel_error_mean": 0.0006722429206665986,
+        "rel_error_rms": 0.008622833449791043,
+        "rel_error_max_abs": 0.022955366831296953,
+        "profile_corr_mean": 0.9669821090533537
+      },
+      "v2": {
+        "rel_error_mean": 9.266175619272144e-07,
+        "rel_error_rms": 0.008325656550819672,
+        "rel_error_max_abs": 0.023232057886708235,
+        "profile_corr_mean": 0.9669859434442285
+      },
+      "rho_abs_error_mean": 0.003843689786051845,
+      "rho_measured_last_mean": 0.07557925295720143,
+      "rho_v2_last_mean": 0.07322042712023236,
+      "measured_max_over_min_median": 1.1223634200386376
+    }
+  },
+  "seconds": 740.5089212999992
+}

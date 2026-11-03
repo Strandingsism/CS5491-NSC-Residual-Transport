@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Third-party papers, course handout and scratch extracts (not redistributed)
+papers/
+tmp/
+topic-neural-spectral-capacity.pdf
+
+# LaTeX build products
+proposal/*.aux
+proposal/*.log
+proposal/*.out

@@ -1,0 +1,134 @@
+{
+  "assumptions": "Reference model (stated assumptions, not the exact archived Transformer-XL implementation):\n- Sublayers in order attn_1, ffn_1, ..., attn_L, ffn_L, each with branch output u_s = F_s(.).\n    post: x <- LN(x + F(x))          (archive: pre_lnorm=false)\n    pre:  x <- x + F(LN(x)), final LN\n    none: x <- x + F(x)\n- Causal softmax attention with per-head Q/K/V and one output projection; FFN W2 relu(W1 x).\n  All entries N(0, s^2), s=0.02 (NSC convention); zero biases; LN gain 1, bias 0; no dropout.\n  No memory segment, relative-position terms, embeddings or vocabulary head.\n- Inputs: n iid tokens with N(0,1) entries (normalized token statistics).",
+  "toy_reorder": {
+    "post": {
+      "ffn_256_512": 119.61318392873824,
+      "ffn_512_256": 119.61318392873824
+    },
+    "pre": {
+      "ffn_256_512": 119.42756467576916,
+      "ffn_512_256": 119.35744163559811
+    },
+    "none": {
+      "ffn_256_512": 122.28069581817857,
+      "ffn_512_256": 122.20920257631899
+    }
+  },
+  "mc_subset": [
+    "config_11_j5",
+    "config_9_j1",
+    "config_9_j7",
+    "config_15_j1",
+    "config_13_j2",
+    "config_9_j0",
+    "config_1_j6",
+    "config_15_j3",
+    "config_19_j1",
+    "config_11_j2",
+    "config_2_j5",
+    "config_14_j7"
+  ],
+  "mc_summary": {
+    "post": {
+      "configs": 12,
+      "rel_error_mean": 0.0142600813294754,
+      "rel_error_max_abs": 0.09942153055609904,
+      "within_config_max_over_min_median": 1.0643103373722786,
+      "within_config_max_over_min_max": 1.139223614984025,
+      "position_rank_trend_mean": -0.0630162082817652
+    },
+    "pre": {
+      "configs": 12,
+      "rel_error_mean": -0.007629504654519294,
+      "rel_error_max_abs": 0.06103715794620512,
+      "within_config_max_over_min_median": 1.117657856183063,
+      "within_config_max_over_min_max": 1.9083867606716503,
+      "position_rank_trend_mean": -0.9569797633582646
+    },
+    "none": {
+      "configs": 12,
+      "rel_error_mean": -0.002781854640438381,
+      "rel_error_max_abs": 0.029173610200712408,
+      "within_config_max_over_min_median": 1.1191416281560693,
+      "within_config_max_over_min_max": 2.5832778157044314,
+      "position_rank_trend_mean": -0.9424480431227092
+    }
+  },
+  "post_weight_profile": {
+    "min_T": 0.9191411906430932,
+    "max_T": 0.995943226887418,
+    "within_config_max_over_min_median": 1.024346961754869,
+    "within_config_max_over_min_max": 1.0835584750484188
+  },
+  "ranking_impact_vs_nsc": {
+    "post_spec": {
+      "tau_b_vs_nsc": 0.9991919191919192,
+      "flipped_pairs_vs_nsc": 2,
+      "all_pairs": 4950,
+      "matched_pairs": 180,
+      "matched_flipped_vs_nsc": 0,
+      "topk_changed_members": {
+        "10M_k1": 0,
+        "10M_k3": 0,
+        "20M_k1": 0,
+        "20M_k3": 0,
+        "30M_k1": 0,
+        "30M_k3": 0,
+        "50M_k1": 0,
+        "50M_k3": 0
+      }
+    },
+    "pre_spec_mismatch": {
+      "tau_b_vs_nsc": 0.9903030303030304,
+      "flipped_pairs_vs_nsc": 24,
+      "all_pairs": 4950,
+      "matched_pairs": 180,
+      "matched_flipped_vs_nsc": 2,
+      "topk_changed_members": {
+        "10M_k1": 1,
+        "10M_k3": 0,
+        "20M_k1": 0,
+        "20M_k3": 0,
+        "30M_k1": 0,
+        "30M_k3": 0,
+        "50M_k1": 0,
+        "50M_k3": 0
+      }
+    },
+    "none_spec": {
+      "tau_b_vs_nsc": 0.9951515151515151,
+      "flipped_pairs_vs_nsc": 12,
+      "all_pairs": 4950,
+      "matched_pairs": 180,
+      "matched_flipped_vs_nsc": 2,
+      "topk_changed_members": {
+        "10M_k1": 0,
+        "10M_k3": 0,
+        "20M_k1": 0,
+        "20M_k3": 0,
+        "30M_k1": 0,
+        "30M_k3": 1,
+        "50M_k1": 0,
+        "50M_k3": 0
+      }
+    },
+    "position_example": {
+      "tau_b_vs_nsc": 0.9503030303030303,
+      "flipped_pairs_vs_nsc": 123,
+      "all_pairs": 4950,
+      "matched_pairs": 180,
+      "matched_flipped_vs_nsc": 4,
+      "topk_changed_members": {
+        "10M_k1": 1,
+        "10M_k3": 1,
+        "20M_k1": 0,
+        "20M_k3": 0,
+        "30M_k1": 0,
+        "30M_k3": 0,
+        "50M_k1": 0,
+        "50M_k3": 0
+      }
+    }
+  },
+  "seconds": 214.76892859999862
+}
