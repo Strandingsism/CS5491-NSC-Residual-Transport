@@ -14,3 +14,8 @@ proposal/*.out
 report/*.aux
 report/*.log
 report/*.out
+
+# Private: proposal and the Canvas build with student IDs
+proposal/
+report/team-private.tex
+report/submit.*

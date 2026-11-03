@@ -21,14 +21,20 @@
 \setlength{\abovedisplayskip}{2pt}
 \setlength{\belowdisplayskip}{2pt}
 \setlength{\tabcolsep}{4pt}
-\input{../proposal/team.tex}
+% Public build lists names only; submit.tex (private, not in the repository) adds IDs and email.
+\ifdefined\UsePrivateTeam
+  \input{team-private.tex}
+\else
+  \def\TeamMembers{Kaiwen Wang, Leao Wang, Lei Gao}
+  \def\ContactEmail{}
+\fi
 \newcommand{\psimp}{\psi_{\mathrm{MP}}}
 
 \begin{document}
 \begin{center}
 \textbf{Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity}\\
 CS5491 Artificial Intelligence --- Project Report\\
-\TeamMembers\\ \ContactEmail
+\TeamMembers\ifx\ContactEmail\empty\else\\ \ContactEmail\fi
 \end{center}
 
 \section{Problem and motivation}

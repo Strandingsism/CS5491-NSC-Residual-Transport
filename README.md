@@ -41,8 +41,7 @@ Report: [`report/report.pdf`](report/report.pdf) (source `report/report.tex`).
 | `analysis/starter_audit/` | Reproduction of the unmodified starter |
 | `analysis/dev_eval/` | Extended evaluation with all baselines/controls (`--split development` or `final`) |
 | `analysis/final_eval/` | One-shot final-split results |
-| `report/` | Report source, figure script and PDF |
-| `proposal/` | Project proposal |
+| `report/` | Report source, figure script and PDF (public build lists names only) |
 
 The notes in `analysis/*/README.md` are in Chinese. They record the assumptions, intermediate results and
 decisions behind each step.
