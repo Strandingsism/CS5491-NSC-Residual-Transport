@@ -135,3 +135,15 @@ def path_embedding_capacity(c, sigma=0.02):
 
 def nsc_path(c):
     return original_nsc(c) + path_embedding_capacity(c)
+
+
+def series_score(c, passes=2):
+    """Series composition of the embedding stage(s) with the residual stack.
+
+    Residual branches are parallel paths (y = x + sum_s F_s), so layer capacities add (NSC). Every
+    path passes through the embedding table on the way in and, with tied weights, again at the
+    output softmax: stages in series combine like resistances, 1/S = 1/NSC + passes/E.
+    passes=2 counts the tied table per invocation (primary); passes=1 counts it once (sensitivity).
+    """
+    n, e = original_nsc(c), path_embedding_capacity(c)
+    return 1.0 / (1.0 / n + passes / e)
