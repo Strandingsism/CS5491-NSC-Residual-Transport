@@ -19,3 +19,4 @@ report/*.out
 proposal/
 report/team-private.tex
 report/submit.*
+controlled/data/
