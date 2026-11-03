@@ -1,151 +1,143 @@
 % Compile from this directory with XeLaTeX (twice): xelatex report.tex
-\documentclass[a4paper,10pt]{article}
-\usepackage[margin=2cm]{geometry}
+% Course format: Times New Roman 12 pt, 2.5 cm margins, single spacing, A4; 4 pages excluding references.
+\documentclass[a4paper,12pt]{article}
+\usepackage[margin=2.5cm]{geometry}
 \usepackage{fontspec}
 \setmainfont{Times New Roman}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
-\usepackage[font=small,labelfont=bf,skip=3pt]{caption}
-\usepackage{enumitem}
+\usepackage[labelfont=bf,skip=3pt]{caption}
+\usepackage[compact]{titlesec}
+\titleformat{\section}{\bfseries}{\thesection}{0.5em}{}
+\titlespacing*{\section}{0pt}{5pt}{1pt}
 \usepackage[hidelinks]{hyperref}
 \hypersetup{pdftitle={Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity},
-  pdfsubject={CS5491 Project Final Report}}
-\setlist{nosep,leftmargin=1.2em}
+  pdfsubject={CS5491 Project Report}}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{4pt}
-\setlength{\textfloatsep}{8pt}
-\setlength{\abovedisplayskip}{3pt}
-\setlength{\belowdisplayskip}{3pt}
+\setlength{\parskip}{3pt}
+\setlength{\textfloatsep}{6pt}
+\setlength{\floatsep}{6pt}
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+\setlength{\tabcolsep}{4pt}
 \input{../proposal/team.tex}
 \newcommand{\psimp}{\psi_{\mathrm{MP}}}
 
 \begin{document}
 \begin{center}
-{\large\textbf{Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity}}\\[2pt]
-CS5491 Artificial Intelligence --- Project Final Report\\[2pt]
-\TeamMembers\quad$\cdot$\quad\ContactEmail
+\textbf{Where Should Layers Count? Residual Transport Weighting for Neural Spectral Capacity}\\
+CS5491 Artificial Intelligence --- Project Report\\
+\TeamMembers\\ \ContactEmail
 \end{center}
 
-\textbf{Abstract.}
-Neural Spectral Capacity (NSC) scores an architecture by summing the Marchenko--Pastur (MP) capacity of its weight matrices with equal weight across layers. We ask whether residual structure itself determines how much each layer should count. We derive, from the specification alone, a mean-field transport factor $T_s$: the mean squared gain from sublayer $s$'s branch output to the network output at initialization, for Post-LN, Pre-LN and unnormalized residual Transformers, including token correlation and Transformer-XL's detached memory. The prediction matches Monte Carlo (MC) measurements on random networks (0.8\% RMS error in the archive's Post-LN setting). Its central implication is that in Post-LN, residual amplification and normalization approximately cancel, so $T_s$ is nearly uniform (0.84--1.00); Pre-LN and no normalization give strongly position-dependent weights, opposite in direction to the starter's $l/L$ example. Weighting NSC by $T_s$ therefore leaves the ranking of the 200 archived Post-LN models essentially unchanged: on the held-out final split, Spearman $\rho$ is 0.9667 versus 0.9659 for original NSC, with identical top-$k$ selection. We report this as a supported negative result: for this panel, equal-weight summation is the first-order aggregation implied by residual structure.
-
-\section{Question and contribution}
-NSC~[1] computes $S_0=\sum_l\bigl[3H_l\psimp(d,d/H_l,\sigma)+\psimp(d,d,\sigma)+2\psimp(d,f_l,\sigma)\bigr]$ with $\sigma=0.02$. Within a matrix the log-determinant has a channel interpretation, but the equal sum across layers is a modelling choice, and reordering layers cannot change $S_0$. The course starter's $l/L$ weighting breaks such ties but has no mechanism. Our question: \emph{does residual structure determine the cross-layer weights, and does the answer depend on where LayerNorm (LN) is placed?} All archived configurations use Post-LN (\texttt{pre\_lnorm=false}), so the placement question decides what the theory predicts for this panel.
-
-Contributions: (i) a specification-only mean-field derivation of $T_s$ for three LN placements, building on residual Jacobian products~[3] and DeepNet's analysis of Post-LN updates~[4]; (ii) MC validation on random residual networks with attention and feed-forward (FFN) sublayers, including a strong-signal regime; (iii) a frozen weighted score with an ablation that recovers NSC, evaluated on development and, once, on the final split against the required and additional baselines. Reproduction of NSC and the evaluator is the starter's; the derivation, validation and evaluation extensions are ours.
+\section{Problem and motivation}
+Neural Spectral Capacity (NSC)~[1] scores an architecture from its specification alone, $S_0=\sum_l[3H_l\psimp(d,d/H_l)+\psimp(d,d)+2\psimp(d,f_l)]$, where $\psimp(m,n,\sigma)$ is the Marchenko--Pastur estimate of $\ln\det(I+W^\top W)$ for $\sigma=0.02$. Within a matrix this has a channel interpretation, but the equal sum across layers is a modelling choice: reordering layers cannot change $S_0$, and the starter's $l/L$ weighting breaks such ties without a mechanism. We ask whether \emph{residual structure determines how much each layer should count, and whether the answer depends on where LayerNorm (LN) is placed}. All 200 archived LiteTransformerSearch~[2] models are Post-LN (\texttt{pre\_lnorm=false}), so the placement decides what theory predicts for this panel. We contribute a specification-only derivation of per-sublayer transport weights for three placements, building on residual Jacobian products~[3] and DeepNet's Post-LN analysis~[4]; its Monte Carlo (MC) validation; and a frozen weighted score evaluated against its ablation and baselines. NSC and the evaluator are reproduced from the course starter.
 
 \section{Method}
-\textbf{Reference model.} Sublayers $s=1,\dots,2L$ alternate attention and FFN. Post-LN updates $x\leftarrow\mathrm{LN}(x+F_s(x))$; Pre-LN $x\leftarrow x+F_s(\mathrm{LN}(x))$ with a final LN; ``none'' $x\leftarrow x+F_s(x)$. Assumptions: matrix entries i.i.d.\ $\mathcal N(0,\sigma^2)$ with NSC's $\sigma=0.02$; zero biases, unit LN gain, no dropout; at this small scale attention logits are near zero, so attention is uniform causal averaging over $K_i=\text{mem}+i$ keys followed by $W_VW_O$; memory enters the forward pass but is detached in the backward pass (Transformer-XL~[9]); FFN is $W_2\,\mathrm{ReLU}(W_1x)$; input tokens are i.i.d. We use the archive's $n=\text{mem}=192$. Embeddings, relative position terms and softmax non-uniformity are omitted.
+\textbf{Reference model.} Sublayers $s=1,\dots,2L$ alternate attention and FFN. Post-LN updates $x\leftarrow\mathrm{LN}(x+F_s(x))$, Pre-LN $x\leftarrow x+F_s(\mathrm{LN}(x))$ with a final LN, and ``none'' $x\leftarrow x+F_s(x)$. Weights are i.i.d.\ $\mathcal N(0,\sigma^2)$ with NSC's $\sigma=0.02$; biases are zero, LN gains one, no dropout. At this scale attention logits are near zero, so attention is uniform causal averaging over $K_i=\text{mem}+i$ keys followed by $W_VW_O$; memory enters the forward pass but is detached in the backward pass, as in Transformer-XL~[9]. FFN is $W_2\,\mathrm{ReLU}(W_1x)$. Input tokens are i.i.d.; $n=\text{mem}=192$ as in the archive.
 
-\textbf{Score and ablation.} Split NSC by sublayer, $\Psi^{\text{attn}}_l=3H_l\psimp(d,d/H_l)+\psimp(d,d)$ and $\Psi^{\text{ffn}}_l=2\psimp(d,f_l)$. With $u_s$ the branch output and $y$ the network output,
-\begin{equation}
-T_s=\tfrac{1}{nd}\,\mathbb E\bigl\|\tfrac{\partial y}{\partial u_s}\,\delta\bigr\|^2\ (\delta\ \text{i.i.d., unit variance}),\qquad
-S=\sum_s T_s\Psi_s .
-\end{equation}
-The ablation sets $T_s\equiv1$, which is exactly $S_0$. As $\sigma\to0$, $T_s\to1-2/d$ (LN placements) or $1$ (none), so $S$ reduces to a constant multiple of NSC.
+\textbf{Score and ablation.} With $u_s$ the branch output of sublayer $s$, $y$ the network output and $\delta$ an i.i.d.\ unit perturbation, the transport factor and the score are
+\begin{equation*}
+T_s=\tfrac{1}{nd}\,\mathbb E\bigl\|(\partial y/\partial u_s)\,\delta\bigr\|^2,\qquad S=\textstyle\sum_s T_s\Psi_s,
+\end{equation*}
+where $\Psi_s$ splits NSC by sublayer: $3H\psimp(d,d/H)+\psimp(d,d)$ for attention and $2\psimp(d,f)$ for FFN. The ablation $T_s\equiv1$ is exactly $S_0$. As $\sigma\to0$, $T_s\to1-2/d$ (with LN) or $1$ (none), so $S$ becomes a constant multiple of NSC.
 
-\textbf{Mean-field recursion.} Per sublayer input we track per-coordinate energy $E$ and mean pairwise token correlation $\rho$. Branch gains are $a=d^2\sigma^4$ (attention) and $b=fd\sigma^4/2$ (FFN). For unit-energy input the branch output has energy $m$ and pairwise inner product $p$:
-\begin{equation}
-\text{attn: } m=a\,[c_1+\rho(1-c_1)],\ p=a\,[c_2+\rho(1-c_2)];\qquad
-\text{FFN: } m=b,\ p=2b\,k_1(\rho),
-\end{equation}
-where $c_1,c_2$ are causal averages of $1/K$ over queries and query pairs, and $k_0,k_1$ are the arc-cosine kernels of ReLU~[8]. In Post-LN, $\rho\leftarrow(\rho+p)/(1+m)$ and LN resets $E=1$. Backward, a perturbation injected at $s$ carries energy $\nu$ and pairwise product $q$, starting from $\nu=1/(1+m_s)$, $q=0$; each later sublayer $t$ applies $\nu\mathrel{+}=a(A_1\nu+A_2q)$, $q\mathrel{+}=a(B_1\nu+B_2q)$ for attention (only current tokens carry gradient) or $\nu\mathrel{*}=1+b$, $q\mathrel{*}=1+2bk_0(\rho_t)$ for FFN, and its LN divides both by $1+m_t$. Finally $T_s=(1-2/d)\,\nu$. Pre-LN and none follow from the same quantities without the per-step division (\texttt{residual\_transport.py}, standard library only).
+\textbf{Mean-field recursion.} We track per-token energy $E$ and mean pairwise token correlation $\rho$. With branch gains $a=d^2\sigma^4$ (attention) and $b=fd\sigma^4/2$ (FFN), a unit-energy input produces output energy $m$ and pairwise product $p$: $m=a[c_1+\rho(1-c_1)]$, $p=a[c_2+\rho(1-c_2)]$ for attention and $m=b$, $p=2bk_1(\rho)$ for FFN, where $c_1,c_2$ are causal averages of $1/K$ and $k_0,k_1$ are ReLU arc-cosine kernels~[8]. In Post-LN, $\rho\leftarrow(\rho+p)/(1+m)$ and LN resets $E=1$. Backward, a perturbation from $s$ starts with energy $\nu=1/(1+m_s)$ and pairwise product $q=0$. Each later attention applies $\nu\mathrel{+}=a(A_1\nu+A_2q)$, $q\mathrel{+}=a(B_1\nu+B_2q)$, whose coefficients count only current, non-memory tokens; each FFN applies $\nu\mathrel{*}=1+b$, $q\mathrel{*}=1+2bk_0(\rho_t)$; each LN divides both by $1+m_t$. Finally $T_s=(1-2/d)\,\nu$. Pre-LN and none use the same quantities without the per-step division.
 
-\textbf{Why Post-LN nearly cancels.} Each later sublayer multiplies the transported energy by $(1+g_t)/(1+m_t)$, where $g_t$ is its Jacobian gain on the perturbation and $m_t$ its forward gain divided out by LN. For FFN, $g_t=m_t=b$ exactly. For attention, $g_t<m_t$ because correlated tokens (the onset of rank collapse~[6,7]) add common-mode energy forward that an i.i.d.\ perturbation does not see, and detached memory contributes forward but not backward. Hence $T_s\approx(1-2/d)/(1+m_s)$ times a product slightly below one: weights depend mainly on the sublayer's own width, with a weak trend that earlier sublayers are transported less, consistent in direction with the larger gradients near the output in Post-LN~[4,5]. Without the division (Pre-LN, none) the products $\prod_{t>s}(1+g_t/E_t)$ grow towards the input and earlier layers dominate.
+\textbf{Why Post-LN nearly cancels.} Each later sublayer multiplies the transported energy by $(1+g_t)/(1+m_t)$: its Jacobian gain over the forward gain that its LN divides out. For FFN, $g_t=m_t$ exactly. For attention, $g_t<m_t$, because correlated tokens (the onset of rank collapse~[6,7]) add common-mode energy forward that a perturbation does not see, and memory contributes only forward. Hence $T_s\approx(1-2/d)/(1+m_s)$ times a product slightly below one. The weight depends mainly on the sublayer's own width, and earlier sublayers are transported slightly less, in line with larger gradients near the output in Post-LN~[4,5]. Without the division (Pre-LN, none), $\prod_{t>s}(1+g_t/E_t)$ grows towards the input and early layers dominate, which is the opposite of $l/L$.
 
-\section{Mechanism checks (label-free)}
+\section{Validation of the derivation (no labels used)}
 \begin{figure}[t]
 \centering\includegraphics[width=\linewidth]{transport_profiles.pdf}
-\caption{Predicted $T_s$ (lines) versus MC measurements (dots). (a) Archive setting, a $d=256$, $L=16$ development specification, 10 seeds, $\pm2$ s.e. (b) Strong-signal regime outside the archive setting ($\sigma=0.04$). Post-LN stays nearly flat in both; Pre-LN and no-norm decay with depth.}
+\caption{Predicted $T_s$ (lines) and MC measurements (dots). (a) Archive setting, one $d=256$, $L=16$ development model, 10 seeds, $\pm2$ s.e. (b) Strong-signal check outside the archive ($\sigma=0.04$).}
 \label{fig:profiles}
 \end{figure}
 
-\textbf{MC validation.} We built random residual networks with full softmax attention, memory from two warm-up segments and finite-difference Jacobian probes, using 28 development specifications (per hidden width, depth quantiles 0--1), $n=\text{mem}=192$, 10 seeds$\times$2 probes. Table~\ref{tab:mc} and Fig.~\ref{fig:profiles}(a) summarize. For Post-LN the RMS error is 0.81\% (bootstrap CI 0.64--0.96\%), 0.45\% without the first sublayer, comparable to MC standard error (0.33\%); the within-configuration profile correlation is 0.92 (median). The residual first-sublayer bias ($\approx3/d$, from feeding unnormalized $\mathcal N(0,1)$ input into the first LN) is a reference-input artifact; in Pre-LN the raw input persists in the stream, so the final LN carries the same $\approx3/d$ offset to every sublayer, affecting scale but not shape. An earlier i.i.d.-token version (v1) had 3.3\% RMS and up to 10\% error in wide, deep Post-LN models, which motivated adding token correlation. In the strong-signal regime (Fig.~\ref{fig:profiles}b; $\sigma\in\{0.03,0.04,0.05\}$), errors stay at 0.7--4\% while measured weight spreads reach $3.2\times$ (no-norm) but only $1.1$--$1.25\times$ (Post-LN), directly showing that the cancellation is due to Post-LN.
-
 \begin{table}[t]
-\centering\small
-\caption{MC validation at the archive setting (28 specifications, 532 sublayers per placement).}
+\centering
+\caption{MC validation at $n=\text{mem}=192$: 28 development models, 532 sublayers per placement.}
 \label{tab:mc}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lccccc}
 \toprule
-Placement & RMS error (95\% CI) & excl.\ 1st & max & MC s.e.\ (med.) & profile corr.\ (med.) & meas.\ max/min \\
+Placement & RMS error (95\% CI) & excl.\ first & MC s.e. & profile corr. & max/min \\
 \midrule
-Post-LN (archive) & 0.81\% (0.64--0.96) & 0.45\% & 5.7\% & 0.33\% & 0.92 & 1.06 \\
-Pre-LN & 2.80\% (2.16--3.40) & 2.79\% & 5.9\% & 0.41\% & 0.999 & 1.15 \\
-none & 0.24\% (0.21--0.28) & 0.24\% & 1.0\% & 0.20\% & 0.999 & 1.15 \\
+Post-LN (archive) & 0.81\% (0.64--0.96) & 0.45\% & 0.33\% & 0.92 & 1.06 \\
+Pre-LN & 2.80\% (2.16--3.40) & 2.79\% & 0.41\% & 0.999 & 1.15 \\
+none & 0.24\% (0.21--0.28) & 0.24\% & 0.20\% & 0.999 & 1.15 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Controlled reorder pair and panel weights.} For the starter's toy pair ($d=128$, FFN widths $[256,512]$ vs.\ $[512,256]$, tied at 121.820 under NSC), the Post-LN score gives 119.6127 vs.\ 119.6123: the tie is barely broken, as predicted. Pre-LN (119.427 vs.\ 119.356) and no-norm (122.280 vs.\ 122.209) favour the wider \emph{early} layer, whereas $l/L$ gives 96.96 vs.\ 85.77 in the opposite direction. On the development panel, Post-LN weights span 0.840--0.995 with median within-configuration max/min 1.025 (max 1.17); Pre-LN spans 0.49--1.00 (max/min up to 1.94). Before seeing labels, Post-LN weighting changed 2 of 4950 pairwise orders relative to NSC and no top-$k$ selection.
+We built random residual networks with full softmax attention, memory from two warm-up segments and finite-difference Jacobian probes, for 28 development specifications (depth quantiles within each width) with 10 seeds and 2 probes (Fig.~\ref{fig:profiles}a, Table~\ref{tab:mc}; medians for s.e., profile correlation and max/min). In Post-LN the error is close to MC noise once the first sublayer is excluded. That sublayer is biased by about $3/d$ because the reference feeds unnormalized $\mathcal N(0,1)$ input to the first LN; in Pre-LN this raw input persists in the stream, so the final LN carries the same offset to every sublayer, changing scale but not shape. An earlier i.i.d.-token version had 3.3\% RMS error (10\% maximum), which motivated the correlation term. In a strong-signal regime ($\sigma=0.03$--$0.05$, Fig.~\ref{fig:profiles}b) errors stay at 0.7--4\%, while measured weight spreads reach $3.2\times$ without normalization but only $1.1$--$1.25\times$ in Post-LN.
+
+For the starter's reorder pair ($d=128$, FFN widths $[256,512]$ vs.\ $[512,256]$, tied at 121.820 by NSC), the Post-LN score gives 119.6127 vs.\ 119.6123, barely breaking the tie. Pre-LN (119.43 vs.\ 119.36) and none (122.28 vs.\ 122.21) favour the wider early layer, whereas $l/L$ (96.96 vs.\ 85.77) favours the opposite. On the development panel, Post-LN weights span 0.84--1.00, with a median within-model max/min of 1.025; Pre-LN weights span 0.49--1.00.
 
 \section{Ranking and selection}
-\textbf{Protocol.} The panel is the archived LiteTransformerSearch configuration family~[2] used in NSC's GPT-2 experiment. We used the starter's 100 development architectures (validation PPL) for all choices, froze the method (git tag \texttt{v2-frozen}), and then ran the 100 final architectures (test PPL) once. Besides the required baselines (NSC, $l/L$, ablation, reported parameters, reference FLOPs, random), we report the mismatched Pre-LN and no-norm weightings as controls, depth, and projection parameters $\sum_l(4d^2+2df_l)$. Size-controlled pairs share $d$ and have total-parameter ratio $\ge0.90$ (180 development, 185 final; overlapping, not independent).
+\textbf{Protocol.} All choices used the 100 development architectures (validation PPL). We then froze the method (git tag \texttt{v2-frozen}) and evaluated the 100 final architectures (test PPL) once. Besides the required baselines, we report mismatched Pre-LN weights, depth and projection parameters $\sum_l(4d^2+2df_l)$. Size-controlled pairs share $d$ and have a total-parameter ratio $\ge0.90$ (180 development, 185 final; they overlap and are not independent).
 
 \begin{table}[t]
-\centering\small
-\caption{Rank correlation with negative PPL. ``Flips'' = pairs ordered differently from NSC on the final split (all / size-controlled). No method below has score ties except depth and FLOPs (development 373 and 1 tied pairs).}
+\centering
+\caption{Rank correlation with negative PPL; ctl = size-controlled pairs; flips = final pairs ordered differently from NSC (all / controlled). Only depth and FLOPs have score ties.}
 \label{tab:rank}
 \begin{tabular}{lccccccc}
 \toprule
 & \multicolumn{3}{c}{Development} & \multicolumn{3}{c}{Final (held out)} & \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
-Score & $\rho$ & $\tau_b$ & ctl.\ $\tau_b$ & $\rho$ & $\tau_b$ & ctl.\ $\tau_b$ & Flips \\
+Score & $\rho$ & $\tau_b$ & ctl $\tau_b$ & $\rho$ & $\tau_b$ & ctl $\tau_b$ & flips \\
 \midrule
-\textbf{Ours: Post-LN transport} & 0.9699 & 0.8614 & 0.622 & \textbf{0.9667} & \textbf{0.8444} & 0.330 & 5 / 0 \\
-Ablation = original NSC & 0.9697 & 0.8614 & 0.622 & 0.9659 & 0.8432 & 0.330 & -- \\
-$l/L$ example & 0.9701 & 0.8651 & 0.622 & 0.9690 & 0.8533 & 0.319 & 97 / 11 \\
-Pre-LN weights (mismatched) & 0.9706 & 0.8646 & 0.644 & 0.9666 & 0.8453 & 0.330 & 9 / 2 \\
-No-norm weights & 0.9701 & 0.8630 & 0.622 & 0.9660 & 0.8432 & 0.308 & 12 / 2 \\
-Projection parameters & 0.9699 & 0.8610 & 0.600 & 0.9643 & 0.8412 & 0.308 & 23 / 4 \\
-Reference FLOPs & 0.9679 & 0.8585 & 0.622 & 0.9651 & 0.8424 & 0.330 & 22 / 2 \\
-Reported total parameters & 0.7279 & 0.5758 & 0.133 & 0.7419 & 0.5895 & 0.276 & 1134 / 57 \\
-Depth & 0.4786 & 0.3603 & 0.652 & 0.4854 & 0.3618 & 0.379 & 1238 / 6 \\
+\textbf{Ours (Post-LN)} & 0.970 & 0.861 & 0.622 & 0.967 & 0.844 & 0.330 & 5 / 0 \\
+Ablation = NSC & 0.970 & 0.861 & 0.622 & 0.966 & 0.843 & 0.330 & -- \\
+$l/L$ example & 0.970 & 0.865 & 0.622 & 0.969 & 0.853 & 0.319 & 97 / 11 \\
+Pre-LN weights & 0.971 & 0.865 & 0.644 & 0.967 & 0.845 & 0.330 & 9 / 2 \\
+Projection params & 0.970 & 0.861 & 0.600 & 0.964 & 0.841 & 0.308 & 23 / 4 \\
+Reference FLOPs & 0.968 & 0.859 & 0.622 & 0.965 & 0.842 & 0.330 & 22 / 2 \\
+Total params & 0.728 & 0.576 & 0.133 & 0.742 & 0.590 & 0.276 & 1134 / 57 \\
+Depth & 0.479 & 0.360 & 0.652 & 0.485 & 0.362 & 0.379 & 1238 / 6 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[t]
-\centering\small
-\caption{Final-split selection: mean regret (best selected PPL minus best feasible PPL) over 200 tie/random trials. Pool sizes 25/57/79/96. Best feasible PPL 38.49/32.18/29.19/26.29.}
+\centering
+\caption{Final-split selection: mean regret in PPL (best selected minus best feasible) over 200 tie-break or random trials. Pool sizes 25/57/79/96.}
 \label{tab:sel}
 \begin{tabular}{lcccccccc}
 \toprule
 Cap / $k$ & 10M/1 & 10M/3 & 20M/1 & 20M/3 & 30M/1 & 30M/3 & 50M/1 & 50M/3 \\
 \midrule
-Ours, ablation, $l/L$, Pre-LN, no-norm, FLOPs & 0 & 0 & 1.14 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
-Projection parameters & 0 & 0 & 0.85 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
-Reported total parameters & 3.72 & 3.72 & 8.44 & 1.49 & 0 & 0 & 1.13 & 1.13 \\
+Ours, NSC, $l/L$, FLOPs & 0 & 0 & 1.14 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
+Projection params & 0 & 0 & 0.85 & 0.85 & 1.62 & 0.77 & 1.37 & 1.33 \\
+Total params & 3.72 & 3.72 & 8.44 & 1.49 & 0 & 0 & 1.13 & 1.13 \\
 Depth & 14.42 & 8.32 & 15.44 & 4.26 & 3.45 & 0.00 & 3.46 & 1.60 \\
-Random ($\pm$ s.d.\ over trials omitted) & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
+Random & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Results.} Tables~\ref{tab:rank} and~\ref{tab:sel} show that the weighted score and its ablation are indistinguishable on both splits. Across both splits only 7 pairs change order relative to NSC (5 now correct, 2 wrong); all are near-ties (NSC ratio within 1.2\%), and 6 of 7 compare different widths, so they reflect the width-dependent scale $(1-2/d)/(1+m_s)$ rather than layer position. Selection is identical in all 8 cap/$k$ cells on both splits. On development, NSC's only non-zero 10M regret (1.94 at $k=1$) comes from a single top-1 swap, which $l/L$, Pre-LN weights and projection parameters avoid; this did not recur on the final split. The mismatched Pre-LN control is no better than Post-LN on the final split ($\rho$ 0.9666), so the weighting appropriate to the actual placement does not lose to an inappropriate one, but neither wins.
+\textbf{Results.} The weighted score and its ablation are indistinguishable (Tables~\ref{tab:rank}, \ref{tab:sel}): final $\rho$ is 0.9667 versus 0.9659, and selection is identical in all eight cap/$k$ cells on both splits. Across both splits only 7 pairs change order relative to NSC (5 become correct, 2 wrong). All are near-ties within 1.2\%, and 6 compare different widths, so they reflect the width-dependent scale $(1-2/d)/(1+m_s)$ rather than layer position. Pre-LN weights also give the same final selection, so neither weighting helps. On development, NSC's only non-zero 10M regret (1.94 at $k=1$) came from one top-1 swap and did not recur on the final split.
 
 \section{Discussion and limitations}
-\textbf{What the score learns beyond size.} Very little on this panel. NSC is almost rank-identical to projection parameter count (development Spearman 0.9997), and its advantage over reported total parameters comes from excluding embeddings: within $d=64$, $\rho$ is 0.98 for NSC versus 0.09 for total parameters on development (0.92 vs.\ 0.18 on final). Under Post-LN, residual transport adds a correction that is nearly constant within a model, so it cannot add much either. The derived weights are informative only when normalization does not divide out residual growth.
+\textbf{What the score learns beyond size.} Very little on this panel. NSC is almost rank-identical to projection parameters (development Spearman 0.9997). Its advantage over total parameters comes from excluding embeddings: within $d=64$, $\rho$ is 0.98 versus 0.09 on development and 0.92 versus 0.18 on final. Post-LN transport is nearly constant within a model, so it cannot add much either. The derived weights would matter where normalization does not divide out residual growth, i.e.\ Pre-LN models, which this panel lacks; testing that needs new trained outcomes. The result is a supported negative one: under Post-LN and small initialization, equal summation is the first-order aggregation implied by residual structure.
 
-\textbf{Instability of the size-controlled statistic.} For every score, size-controlled $\tau_b$ falls from about 0.62 on development to about 0.33 on final, and within-$d{=}512$ $\rho$ drops to 0.66. This is a property of the panel's near-size pairs, not of any method, and the development value should not be read as stable.
+\textbf{Instability of size control.} For every score, controlled $\tau_b$ falls from about 0.62 on development to about 0.33 on final. This is a property of the panel's near-size pairs, not of any method.
 
-\textbf{Failures and scope.} The transport factor describes signal propagation at initialization, not training dynamics: a branch with zero forward output can still learn (we verified a small counterexample), so $T_s$ is not a learnability measure. The reference model omits relative position attention, adaptive embeddings, dropout and attention non-uniformity, and assumes i.i.d.\ input tokens; correlated real text would strengthen the weak late-layer trend. The archive has one outcome per architecture with no seeds, so the reported variability concerns only tie-breaking and random selection, not training noise. We did not test the derived Pre-LN weighting on trained Pre-LN models, which is where it predicts a real difference; that requires new trained outcomes.
+\textbf{Scope.} $T_s$ describes signal propagation at initialization, not learning: a branch with zero output can still learn, which we verified on a small example. The model omits relative position attention, adaptive embeddings, dropout and softmax non-uniformity, and assumes i.i.d.\ inputs. The archive has one outcome per architecture, so reported variability covers only tie-breaking and random selection, not training seeds.
 
-\textbf{Reproducibility and cost.} Code, data, commands and all outputs are in the repository; the method is frozen at tag \texttt{v2-frozen} (commit 498c831) and the final run is the following commit. Scoring 100 architectures takes 0.12\,s cold (almost all MP quadrature) and 5\,ms warm, versus 0.12\,s/0.4\,ms for NSC, on an Intel Core Ultra 9 290HX (Python 3.12, standard library). The MC validation (NumPy) takes 27\,min on 22 processes. Exact commands are listed in \texttt{analysis/final\_eval/README.md} and \texttt{analysis/meanfield\_transport/README.md}.
+\textbf{Reproducibility and LLM use.} The repository README lists the environment and exact commands; the frozen method is tag \texttt{v2-frozen}. Scoring 100 architectures takes 0.12\,s cold and 5\,ms warm (NSC: 0.12\,s and 0.4\,ms) on an Intel Core Ultra 9 290HX; the MC validation takes 27\,min on 22 processes. Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code and drafting. All numbers come from the repository's scripts, and the team is responsible for the content.
 
-\textbf{LLM use.} Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code, analysis scripts and drafting; all reported numbers were produced by the repository's scripts. The team is responsible for the derivation, the code and the claims.
+\newpage
+\textbf{References}
 
-\vspace{2pt}
-\footnotesize
-\textbf{References.}
-[1]~Zhu, Zhao, Lu. Neural Spectral Capacity: Measuring and designing architectures from network specification alone. arXiv:2609.23087, 2026.
-[2]~Javaheripi et al. LiteTransformerSearch: Training-free neural architecture search for efficient language models. NeurIPS 2022.
-[3]~Tarnowski, Warchoł, Jastrzębski, Tabor, Nowak. Dynamical isometry is achieved in residual networks in a universal way for any activation function. AISTATS 2019.
-[4]~Wang et al. DeepNet: Scaling Transformers to 1,000 layers. arXiv:2203.00555, 2022.
-[5]~Xiong et al. On layer normalization in the Transformer architecture. ICML 2020.
-[6]~Dong, Cordonnier, Loukas. Attention is not all you need: Pure attention loses rank doubly exponentially with depth. ICML 2021.
-[7]~Noci et al. Signal propagation in Transformers: Theoretical perspectives and the role of rank collapse. NeurIPS 2022.
-[8]~Cho, Saul. Kernel methods for deep learning. NeurIPS 2009.
-[9]~Dai et al. Transformer-XL: Attentive language models beyond a fixed-length context. ACL 2019.
+\begingroup\small\setlength{\parskip}{1pt}
+[1]~Zhu, Zhao, Lu. Neural Spectral Capacity: Measuring and designing architectures from network specification alone. arXiv:2609.23087, 2026.\par
+[2]~Javaheripi et al. LiteTransformerSearch: Training-free neural architecture search for efficient language models. NeurIPS 2022.\par
+[3]~Tarnowski, Warchoł, Jastrzębski, Tabor, Nowak. Dynamical isometry is achieved in residual networks in a universal way for any activation function. AISTATS 2019.\par
+[4]~Wang et al. DeepNet: Scaling Transformers to 1,000 layers. arXiv:2203.00555, 2022.\par
+[5]~Xiong et al. On layer normalization in the Transformer architecture. ICML 2020.\par
+[6]~Dong, Cordonnier, Loukas. Attention is not all you need: Pure attention loses rank doubly exponentially with depth. ICML 2021.\par
+[7]~Noci et al. Signal propagation in Transformers: Theoretical perspectives and the role of rank collapse. NeurIPS 2022.\par
+[8]~Cho, Saul. Kernel methods for deep learning. NeurIPS 2009.\par
+[9]~Dai et al. Transformer-XL: Attentive language models beyond a fixed-length context. ACL 2019.\par
+\endgroup
 \end{document}
