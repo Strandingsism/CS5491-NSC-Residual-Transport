@@ -38,9 +38,9 @@ CS5491 Artificial Intelligence --- Project Report\\
 \end{center}
 
 \section{Problem and motivation}
-Neural Spectral Capacity (NSC)~[1] scores an architecture from its specification alone, $S_0=\sum_l[3H_l\psimp(d,d/H_l)+\psimp(d,d)+2\psimp(d,f_l)]$, where $\psimp(m,n,\sigma)$ is the Marchenko--Pastur estimate of $\ln\det(I+W^\top W)$ at $\sigma=0.02$. Two choices in this sum ignore the computational graph: every layer counts equally, and the tied adaptive embedding, through which every token enters and leaves the network, is not counted at all. We study both on the course panel of 200 archived LiteTransformerSearch~[2] decoders (100 development, 100 final), all Post-LN with Transformer-XL memory and adaptive embeddings. \emph{Study~1} asks whether residual structure determines how much each layer should count; it derives per-sublayer transport weights and finds that Post-LN makes them nearly uniform (a negative result). \emph{Study~2} uses that finding to score the embedding path, which NSC misses; it improves ranking on held-out architectures. Study~1 carries out the plan of our proposal; Study~2 goes beyond it and arose from analysing the development data after Study~1's negative result. NSC and the evaluator come from the course starter.
+Neural Spectral Capacity (NSC)~[1] scores an architecture from its specification alone, $S_0=\sum_l[3H_l\psimp(d,d/H_l)+\psimp(d,d)+2\psimp(d,f_l)]$, where $\psimp(m,n,\sigma)$ is the Marchenko--Pastur estimate of $\ln\det(I+W^\top W)$ at $\sigma=0.02$. Two choices in this sum ignore the computational graph: every layer counts equally, and the tied adaptive embedding, through which every token enters and leaves the network, is not counted at all. We study both on the course panel of 200 archived LiteTransformerSearch~[2] decoders (100 development, 100 final), all Post-LN with Transformer-XL memory and adaptive embeddings. \emph{Study~1} asks whether residual structure determines how much each layer should count; it derives per-sublayer transport weights and finds that Post-LN makes them nearly uniform (a negative result). \emph{Study~2} uses that finding to score the embedding path, which NSC misses; it improves ranking on held-out architectures. \emph{Study~3} tests Study~2's mechanism by training new models in which only the embedding varies: the embedding's effect is confirmed, but the rank-saturation form of the term is not. Study~1 carries out the plan of our proposal; Study~2 goes beyond it and arose from analysing the development data after Study~1's negative result. NSC and the evaluator come from the course starter.
 
-\textbf{Protocol and disclosure.} All design choices used development labels only. Study~1 was frozen (git tag \texttt{v2-frozen}) and evaluated once on the final split. Study~2 was proposed afterwards from development data, frozen with a pre-registered analysis plan (tag \texttt{v3-frozen}), and evaluated once on the same final split. The final split was therefore used twice; Study~2 used no information from it.
+\textbf{Protocol and disclosure.} All design choices used development labels only. Study~1 was frozen (git tag \texttt{v2-frozen}) and evaluated once on the final split. Study~2 was proposed afterwards from development data, frozen with a pre-registered analysis plan (tag \texttt{v3-frozen}), and evaluated once on the same final split. The final split was therefore used twice; Study~2 used no information from it. Study~3 was pre-registered before any training run and uses only newly trained models.
 
 \section{Study 1: residual transport weights}
 \textbf{Method.} With $u_s$ the output of residual branch $s$ (attention or FFN), $y$ the network output and $\delta$ an i.i.d.\ unit perturbation, we weight each sublayer by $T_s=\frac{1}{nd}\mathbb E\|(\partial y/\partial u_s)\delta\|^2$ at initialization, giving $S=\sum_sT_s\Psi_s$ with $\Psi_s$ the sublayer's NSC terms; $T_s\equiv1$ recovers NSC. We derive $T_s$ from the specification with a mean-field recursion over per-token energy and pairwise token correlation, for Post-LN, Pre-LN and no normalization. The model assumes $\mathcal N(0,\sigma^2)$ weights, uniform causal attention at small initialization, memory detached in the backward pass~[9] and ReLU arc-cosine kernels~[8], building on residual Jacobian products~[3] and DeepNet's Post-LN analysis~[4].
@@ -102,9 +102,34 @@ Random & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
 \end{tabular}
 \end{table}
 
-\textbf{Ranking.} The pre-registered hypothesis was that $\rho(\text{v3})>\rho(\text{NSC})$ on the final split with a bootstrap 95\% interval (architectures resampled 5000 times) above zero. It holds: $\Delta\rho=+0.015$ [+0.006, +0.028], replicating the development gain of +0.014 [+0.006, +0.026] (Table~\ref{tab:rank}). The largest gain is within $d=512$ (+0.090), where NSC is weakest and the embedding is the smallest stage relative to the layers. Size-controlled $\tau_b$ rises from 0.330 to 0.373. Removing the bottleneck (adding the full embedding capacity) lowers development $\rho$ to 0.924, so the gain comes from the rank-limited path, not from counting embeddings as such. We predicted that v3 would rank $d=64$ models worse than NSC, as it did on development; on final it ranks them better (0.940 vs 0.919), so this prediction failed and the development weakness may have been noise.
+\textbf{Ranking.} The pre-registered hypothesis was that $\rho(\text{v3})>\rho(\text{NSC})$ on the final split with a bootstrap 95\% interval (architectures resampled 5000 times) above zero. It holds: $\Delta\rho=+0.015$ [+0.006, +0.028], replicating the development gain of +0.014 [+0.006, +0.026] (Table~\ref{tab:rank}). The largest gain is within $d=512$ (+0.090), where NSC is weakest and the embedding is the smallest stage relative to the layers. Size-controlled $\tau_b$ rises from 0.330 to 0.373. Removing the bottleneck (adding the full embedding capacity) lowers development $\rho$ to 0.924, so on the archive the gain comes from the rank-limited path, not from counting embeddings as such (but see Section~5). We predicted that v3 would rank $d=64$ models worse than NSC, as it did on development; on final it ranks them better (0.940 vs 0.919), so this prediction failed and the development weakness may have been noise.
 
 \textbf{Selection.} Budgeted top-$k$ selection is identical for v3 and NSC in all eight cells (Table~\ref{tab:sel}): within a parameter cap, the best models are the largest ones, and v3 changes the order among models of similar size rather than across sizes.
+
+\section{Study 3: controlled training test of the embedding term}
+\textbf{Design.} Archive evidence is observational, so we trained our own models with a fixed decoder and only the embedding varied. The models are Transformer-XL with relative attention and memory, Post-LN, and tied adaptive embedding and softmax (archive cutoffs), trained with GPT-2 BPE on WikiText-103 (Adam, lr $10^{-3}$, cosine schedule, bf16, $2\times10^7$ tokens). Panel A uses $d=256$, $L=8$, $f=1024$ and $d_{\mathrm{embed}}\in\{64,128,256,512\}\times\text{div}\in\{1,2,4\}$; panel B uses $d=512$, $f=2048$ and $d_{\mathrm{embed}}\in\{128,256,512\}$, div 1. Each configuration has 3 seeds. Two further runs repeat $d_{\mathrm{embed}}=64/256$ with $6\times10^7$ tokens. The hypotheses, configurations and analysis were pre-registered; the outcome is validation log PPL. The 47 runs took 6.3 GPU-hours on one RTX 4080 SUPER. NSC is identical (2151.1) for all of panel A, so it cannot rank these models.
+
+\begin{table}[t]
+\centering
+\caption{Controlled panel A ($d=256$): validation PPL (mean of 3 seeds; s.e.\ of log PPL $\le0.008$) and v3's embedding term $E=S_{\text{v3}}-S_0$.}
+\label{tab:ctl}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{PPL} & \multicolumn{3}{c}{$E$ (v3)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+$d_{\mathrm{embed}}$ & div 1 & div 2 & div 4 & div 1 & div 2 & div 4 \\
+\midrule
+64 & 105.7 & 110.5 & 117.1 & 273 & 414 & 315 \\
+128 & 91.3 & 95.4 & 99.5 & 440 & 656 & 501 \\
+256 & 79.2 & 85.6 & 88.8 & 780 & 948 & 725 \\
+512 & 74.2 & 77.2 & 79.7 & 713 & 1205 & 947 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Results} (Table~\ref{tab:ctl}). The pooled seed SD of log PPL is 0.015. H1, ranking of panel A, holds: $\rho(\text{v3})=0.825$ (permutation $p=0.001$), although total parameters rank better ($\rho=0.993$). H2, saturation at $d_{\mathrm{embed}}=d$, fails: 512 beats 256 by 0.066 in log PPL ($\approx$10 s.e.). H3, div 2 better than div 1, fails in the opposite direction at all four widths (+0.04 to +0.08, each $>5$ s.e.). H4 holds: in panel B, PPL falls monotonically (98.1, 75.9, 63.5). At three times the training tokens the 64-versus-256 gap keeps 95\% of its size, so the effect is not an artefact of short training.
+
+\textbf{Interpretation.} With the layers fixed, a larger embedding consistently helps. NSC cannot see this; v3 gets the direction right. Both structural predictions of the $\psimp$ path term, rank saturation and credit for div, are refuted, and here the embedding's parameter count predicts better. The frozen archive gain of Study~2 stands, but its explanation narrows: the controlled evidence supports counting the embedding path, not the specific rank-bottleneck form, and the saturation in Fig.~\ref{fig:fig1}b may reflect the LTS search space or full-length training. Limits: one dataset and model family, at most about half an epoch of training, and only three configurations in panel B.
 
 \section{Discussion and limitations}
 \textbf{What the scores learn beyond size.} NSC is nearly rank-identical to projection parameters (development Spearman 0.9997); Study~1 shows that residual transport cannot change this under Post-LN. Study~2 adds information that size counts miss: the capacity of a serial stage that every token passes, limited by its rank.
@@ -113,9 +138,9 @@ Random & 12.18 & 3.97 & 15.36 & 6.29 & 15.53 & 5.93 & 15.36 & 5.85 \\
 
 \textbf{Limitations.} Before freezing v3 we examined several embedding variants on development labels (uncapped, rank-capped, Zipf-weighted, two fitted log forms, two series forms); the chosen formula was fixed from label-free checks before its own development evaluation. The final split was used twice. Capacities describe initialization, not training; the reference model omits relative position attention, dropout and attention non-uniformity. The archive has one outcome per architecture and no seeds, so the reported variability covers architecture resampling and tie-breaking only.
 
-\textbf{Ongoing work.} The project continues towards the final report. Any further analysis will use development data only and will be reported as exploratory; the final split will not be used again.
+The controlled study tests mechanisms on new models and does not touch the archive's final split, which will not be used again.
 
-\textbf{Reproducibility and LLM use.} The repository README lists the environment and every command. Methods are frozen at tags \texttt{v2-frozen} and \texttt{v3-frozen}. Scoring 100 architectures takes about 0.1\,s on an Intel Core Ultra 9 290HX (standard library). Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code and drafting. All numbers come from the repository's scripts, and the team is responsible for the content.
+\textbf{Reproducibility and LLM use.} The repository README lists the environment and every command. Methods are frozen at tags \texttt{v2-frozen} and \texttt{v3-frozen}; the controlled study (directory \texttt{controlled/}) records its pre-registration, every run and its analysis. Scoring 100 architectures takes about 0.1\,s on an Intel Core Ultra 9 290HX (standard library). Claude (Anthropic) and ChatGPT/Codex (OpenAI) assisted with literature reading, code and drafting. All numbers come from the repository's scripts, and the team is responsible for the content.
 
 \newpage
 \textbf{References}
