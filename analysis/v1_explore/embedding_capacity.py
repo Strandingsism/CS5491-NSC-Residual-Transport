@@ -112,3 +112,26 @@ def bottleneck_embedding_capacity(c):
 
 def nsc_bottleneck(c):
     return original_nsc(c) + bottleneck_embedding_capacity(c)
+
+
+def path_embedding_capacity(c, sigma=0.02):
+    """Capacity of each table's path E P into the residual stream under Post-LN scale invariance.
+
+    E (v x w) has N(0, sigma^2) entries; the projection P (w x d) is taken variance-preserving,
+    N(0, 1/w), because LN removes its overall scale. With v >> w (w/v <= 0.05 in the panel),
+    E^T E ~= sigma^2 v I_w, so the nonzero spectrum of (E P)^T (E P) is that of a w x d matrix with
+    entries N(0, sigma^2 v / w): psi_MP(w, d, sigma * sqrt(v / w)). A div_val=1 table with
+    d_embed == d_model has no projection and is scored directly as psi_MP(v, d, sigma).
+    """
+    d = c['d_model']
+    total = []
+    for v, w in embedding_tables(c):
+        if c['div_val'] == 1 and w == d:
+            total.append(psi_mp(v, d, sigma))
+        else:
+            total.append(psi_mp(w, d, sigma * math.sqrt(v / w)))
+    return math.fsum(total)
+
+
+def nsc_path(c):
+    return original_nsc(c) + path_embedding_capacity(c)
