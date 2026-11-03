@@ -6,7 +6,7 @@ Panel C: training-length check, panel A d_embed {64,256}, div_val 1, seed 0, 6e7
 All other runs use 2e7 tokens. Seeds are interleaved so that a partial panel stays balanced.
 Finished runs (runs/<name>.json present) are skipped, so the script can be restarted.
 
-Run from project root:  python controlled/run_panel.py [--panel A B C] [--dry]
+Run from project root:  python controlled/run_panel.py [--panel A B C] [--dry] [--shard i/n]
 """
 from pathlib import Path
 import argparse
@@ -37,8 +37,11 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--panel', nargs='+', default=['A', 'B', 'C'])
     p.add_argument('--dry', action='store_true', help='list pending runs only')
+    p.add_argument('--shard', default='0/1', help='i/n: run every n-th pending run starting at i (parallel workers)')
     a = p.parse_args()
-    todo = [(n, kw) for n, kw in runs() if n[0] in a.panel and not (HERE / 'runs' / f'{n}.json').exists()]
+    i0, n = map(int, a.shard.split('/'))
+    todo = [(n_, kw) for n_, kw in runs() if n_[0] in a.panel]
+    todo = [t for j, t in enumerate(todo) if j % n == i0 and not (HERE / 'runs' / f'{t[0]}.json').exists()]
     print(f'{len(todo)} runs pending')
     for i, (name, kw) in enumerate(todo, 1):
         cmd = [sys.executable, str(HERE / 'train.py'), '--name', name] + [x for k, v in kw.items() for x in (f'--{k}', str(v))]
