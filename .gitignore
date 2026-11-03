@@ -11,3 +11,6 @@ topic-neural-spectral-capacity.pdf
 proposal/*.aux
 proposal/*.log
 proposal/*.out
+report/*.aux
+report/*.log
+report/*.out
