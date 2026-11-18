@@ -24,14 +24,25 @@ and Transformer-XL's detached memory. Score `S = sum_s T_s * Psi_s`; ablation `T
 adaptive-embedding table (v tokens x w columns) and a w x d_model projection. Using Study 1's result that
 Post-LN removes the projection's scale, the path's capacity is `psi_MP(w, d, 0.02*sqrt(v/w))` per table.
 Score = NSC + this term; ablation = NSC.
-- Within each width, embedding width explains most of what NSC misses, and its benefit saturates near
-  `d_embed = d_model`, as the rank bottleneck predicts.
+- In the archive, embedding width explains much of what NSC misses within each model width. Study 3
+  below tests the predicted saturation near `d_embed = d_model` using controlled training.
 - The formula matches Monte Carlo spectra within 0.4% RMS.
 - Final split (pre-registered, run once): rho **0.9802** vs NSC 0.9659, bootstrap delta +0.015
   [+0.006, +0.028]; within d=512, 0.749 vs 0.659. Budgeted selection is unchanged.
 - Disclosure: the final split was used twice (v2, then v3). v3 was designed on development data only.
 
-Report: [`report/report.pdf`](report/report.pdf) (source `report/report.tex`).
+**Study 3 (v4): controlled training test of the embedding term.** We trained 47 Transformer-XL models
+on WikiText-103 with GPT-2 BPE, keeping the decoder fixed within each panel and varying `d_embed` and
+`div_val`. The configurations, hypotheses and analysis were pre-registered.
+- Larger embeddings improve validation perplexity. In panel A, v3 ranks configurations with rho 0.825
+  (one-sided permutation p = 0.001), while total parameter count reaches rho 0.993.
+- Two structural predictions fail: the improvement continues beyond `d_embed = d_model`, and
+  `div_val = 2` gives worse perplexity than `div_val = 1` at every tested embedding width.
+- The embedding effect persists at three times the training budget (log-PPL gap ratio 0.95).
+  These results support including embeddings in the score, while limiting the proposed spectral
+  mechanism's interpretation. The test covers one dataset and model family with short training.
+
+Report: [`report/report.pdf`](report/report.pdf) (source `report/report.tex`), including all three studies.
 
 ## Repository layout
 
@@ -49,6 +60,9 @@ Report: [`report/report.pdf`](report/report.pdf) (source `report/report.tex`).
 | `analysis/starter_audit/` | Reproduction of the unmodified starter |
 | `analysis/dev_eval/` | Extended evaluation with all baselines/controls (`--split development` or `final`) |
 | `analysis/final_eval/` | One-shot final-split results |
+| `controlled/` | Study 3: data preparation, Transformer-XL training, pre-registered panel and analysis |
+| `controlled/runs/` | Results of all 47 panel runs and 3 timing pilots |
+| `controlled/README.md` | Study 3 setup, pre-registration, execution record and interpretation |
 | `report/` | Report source, figure script and PDF (public build lists names only) |
 
 The notes in `analysis/*/README.md` are in Chinese. They record the assumptions, intermediate results and
@@ -60,6 +74,8 @@ decisions behind each step.
 - The analysis scripts need NumPy and Matplotlib. Tested with Python 3.12.14, numpy 2.5.4 and
   matplotlib 3.11.2 on Windows 11.
 - Building the report needs XeLaTeX (TeX Live 2026) and the Times New Roman font.
+- Study 3 training additionally needs the packages in `controlled/requirements.txt` and a CUDA GPU.
+  The recorded runs used PyTorch 2.9.1 with CUDA 12.8; analysis of the saved results needs only NumPy.
 
 ```sh
 python -m venv .venv
@@ -67,8 +83,8 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Every command below runs from the repository root. Reported times were measured on an Intel Core Ultra 9
-290HX (24 threads).
+Every command below runs from the repository root. CPU analysis times were measured on an Intel Core Ultra 9
+290HX (24 threads). Study 3 GPU timings are listed separately below.
 
 ## Reproducing every result
 
@@ -150,7 +166,47 @@ Analysis behind the method (development labels only, except the label-free mecha
 The notes in `analysis/v3_embedding_path/README.md` record every variant examined on development labels and
 the series-aggregation test (pre-registered, failed), in order.
 
-### 6. Report figure and PDF
+### 6. Study 3 (v4): controlled training and analysis
+
+Analyze the committed results without retraining (seconds):
+
+```sh
+python controlled/analyze.py
+```
+
+This writes `controlled/analysis.json`. Expected results include panel A rho(v3) = 0.825,
+rho(total parameters) = 0.993, pooled seed standard deviation = 0.0150, H1 and H4 passing,
+H2 and H3 failing, and training-length gap ratio = 0.95. The report's Study 3 table uses these results.
+See [`controlled/README.md`](controlled/README.md) for the full pre-registration and results.
+
+To reproduce training, install the CUDA build of PyTorch and the remaining dependencies, then prepare data:
+
+```sh
+pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+pip install -r controlled/requirements.txt
+python controlled/prepare_data.py
+```
+
+Preparation downloads SHA-256-verified WikiText-103 files and tokenizes them with GPT-2 BPE, producing
+`controlled/data/{train,valid,test}.npy` (about 0.5 GB). Expected token counts are 117,920,140 / 247,289 /
+283,287. Download time depends on the network; tokenization takes a few minutes. Outcomes use validation
+perplexity; the test split is unused.
+
+`run_panel.py` skips any run whose JSON already exists. To retrain the full panel, first move the 47
+`A_*.json`, `B_*.json` and `C_*.json` files from `controlled/runs/` to a backup directory, then run:
+
+```sh
+python controlled/run_panel.py --dry
+python controlled/run_panel.py
+python controlled/analyze.py
+```
+
+The dry run should list 47 pending runs (36 in A, 9 in B, 2 in C). The recorded panel took 6.3 GPU-hours
+on an RTX 4080 SUPER: A runs took 326–513 s each, B 476–589 s and C 1019–1248 s. Two concurrent workers
+using `--shard 0/2` and `--shard 1/2` completed it in about 3.3 hours. Seeded GPU reruns may differ
+numerically across hardware and software environments.
+
+### 7. Report figure and PDF
 
 ```sh
 python report/make_figure.py       # writes report/figure1.pdf (panel b reads development labels)
@@ -161,7 +217,8 @@ cd report && xelatex report.tex && xelatex report.tex
 
 `nsc-starter/data/` is the course-supplied archive. `provenance.json` describes its sources and SHA-256
 hashes, which `check_starter.py` verifies. Git stores these files byte-exact (see `.gitattributes`). Outcome
-labels are read only by `evaluate.py` and `extended_eval.py`. The scorer receives the configuration only.
+labels are read by evaluation and outcome-analysis scripts. The scorer receives the configuration only.
+Study 3 uses independently trained outcomes and does not use the archive's final-split labels.
 
 ## Use of LLMs
 
